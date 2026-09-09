@@ -1,0 +1,2679 @@
+{
+  "ops": [
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        0,
+        318,
+        340
+      ],
+      "outputs": [
+        3
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        3
+      ],
+      "outputs": [
+        4
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        4,
+        307,
+        275
+      ],
+      "outputs": [
+        7
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        7
+      ],
+      "outputs": [
+        8
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        8,
+        348,
+        263
+      ],
+      "outputs": [
+        11
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 16,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        11
+      ],
+      "outputs": [
+        12
+      ],
+      "options": {}
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        12
+      ],
+      "outputs": [
+        13
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          64,
+          64
+        ],
+        "filter": [
+          64,
+          64
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        13,
+        251,
+        331
+      ],
+      "outputs": [
+        16
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        16
+      ],
+      "outputs": [
+        17
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        17,
+        295,
+        319
+      ],
+      "outputs": [
+        20
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        20
+      ],
+      "outputs": [
+        21
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        12,
+        21
+      ],
+      "outputs": [
+        22
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        22,
+        309,
+        276
+      ],
+      "outputs": [
+        25
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        25,
+        323,
+        345
+      ],
+      "outputs": [
+        28
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        28
+      ],
+      "outputs": [
+        29
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        29,
+        312,
+        333
+      ],
+      "outputs": [
+        32
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 72,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        32
+      ],
+      "outputs": [
+        33
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        33,
+        354,
+        269
+      ],
+      "outputs": [
+        36
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        36,
+        316,
+        341
+      ],
+      "outputs": [
+        39
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        39
+      ],
+      "outputs": [
+        40
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        40,
+        359,
+        273
+      ],
+      "outputs": [
+        43
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 88,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        43
+      ],
+      "outputs": [
+        44
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        44,
+        346,
+        260
+      ],
+      "outputs": [
+        47
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        47,
+        36
+      ],
+      "outputs": [
+        48
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        48,
+        334,
+        305
+      ],
+      "outputs": [
+        51
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        51
+      ],
+      "outputs": [
+        52
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        52,
+        268,
+        293
+      ],
+      "outputs": [
+        55
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 96,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": [
+          1,
+          2,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        55
+      ],
+      "outputs": [
+        56
+      ],
+      "options": {}
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        56
+      ],
+      "outputs": [
+        57
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          16,
+          16
+        ],
+        "filter": [
+          16,
+          16
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        57,
+        282,
+        250
+      ],
+      "outputs": [
+        60
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        60
+      ],
+      "outputs": [
+        61
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        61,
+        321,
+        347
+      ],
+      "outputs": [
+        64
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        64
+      ],
+      "outputs": [
+        65
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        56,
+        65
+      ],
+      "outputs": [
+        66
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        66,
+        332,
+        306
+      ],
+      "outputs": [
+        69
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        69,
+        352,
+        265
+      ],
+      "outputs": [
+        72
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        72
+      ],
+      "outputs": [
+        73
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        73,
+        339,
+        254
+      ],
+      "outputs": [
+        76
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 128,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        76
+      ],
+      "outputs": [
+        77
+      ],
+      "options": {}
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        77
+      ],
+      "outputs": [
+        78
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          16,
+          16
+        ],
+        "filter": [
+          16,
+          16
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        78,
+        299,
+        322
+      ],
+      "outputs": [
+        81
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        81
+      ],
+      "outputs": [
+        82
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        82,
+        288,
+        310
+      ],
+      "outputs": [
+        85
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        85
+      ],
+      "outputs": [
+        86
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        77,
+        86
+      ],
+      "outputs": [
+        87
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        87,
+        353,
+        266
+      ],
+      "outputs": [
+        90
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        90,
+        69
+      ],
+      "outputs": [
+        91
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        91,
+        336,
+        255
+      ],
+      "outputs": [
+        94
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        94
+      ],
+      "outputs": [
+        95
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        95,
+        271,
+        296
+      ],
+      "outputs": [
+        98
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 128,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        98
+      ],
+      "outputs": [
+        99
+      ],
+      "options": {}
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        99
+      ],
+      "outputs": [
+        100
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          16,
+          16
+        ],
+        "filter": [
+          16,
+          16
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        100,
+        285,
+        308
+      ],
+      "outputs": [
+        103
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        103
+      ],
+      "outputs": [
+        104
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        104,
+        327,
+        349
+      ],
+      "outputs": [
+        107
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        107
+      ],
+      "outputs": [
+        108
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        99,
+        108
+      ],
+      "outputs": [
+        109
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        109,
+        337,
+        252
+      ],
+      "outputs": [
+        112
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        112,
+        91
+      ],
+      "outputs": [
+        113
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        113,
+        272,
+        297
+      ],
+      "outputs": [
+        116
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        116
+      ],
+      "outputs": [
+        117
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        117,
+        259,
+        286
+      ],
+      "outputs": [
+        120
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 96,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        120
+      ],
+      "outputs": [
+        121
+      ],
+      "options": {}
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        121
+      ],
+      "outputs": [
+        122
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          16,
+          16
+        ],
+        "filter": [
+          16,
+          16
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        122,
+        328,
+        350
+      ],
+      "outputs": [
+        125
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        125
+      ],
+      "outputs": [
+        126
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        126,
+        313,
+        338
+      ],
+      "outputs": [
+        129
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        129
+      ],
+      "outputs": [
+        130
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        121,
+        130
+      ],
+      "outputs": [
+        131
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        131,
+        270,
+        294
+      ],
+      "outputs": [
+        134
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        134,
+        113
+      ],
+      "outputs": [
+        135
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        135,
+        257,
+        283
+      ],
+      "outputs": [
+        138
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        138
+      ],
+      "outputs": [
+        139
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        139,
+        302,
+        325
+      ],
+      "outputs": [
+        142
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 96,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "HARD_SWISH",
+      "inputs": [
+        142
+      ],
+      "outputs": [
+        143
+      ],
+      "options": {}
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        143
+      ],
+      "outputs": [
+        144
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          16,
+          16
+        ],
+        "filter": [
+          16,
+          16
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        144,
+        314,
+        335
+      ],
+      "outputs": [
+        147
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        147
+      ],
+      "outputs": [
+        148
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        148,
+        356,
+        274
+      ],
+      "outputs": [
+        151
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        151
+      ],
+      "outputs": [
+        152
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        143,
+        152
+      ],
+      "outputs": [
+        153
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        153,
+        258,
+        284
+      ],
+      "outputs": [
+        156
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        156,
+        135
+      ],
+      "outputs": [
+        157
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        157
+      ],
+      "outputs": [
+        158
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          16,
+          16
+        ],
+        "filter": [
+          16,
+          16
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        157,
+        326,
+        351
+      ],
+      "outputs": [
+        161
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        158,
+        289,
+        311
+      ],
+      "outputs": [
+        164
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        161
+      ],
+      "outputs": [
+        165
+      ],
+      "options": {}
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        164
+      ],
+      "outputs": [
+        166
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        165,
+        166
+      ],
+      "outputs": [
+        167
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        167,
+        168
+      ],
+      "outputs": [
+        169
+      ],
+      "options": {
+        "size": [
+          32,
+          32
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        169,
+        320,
+        342
+      ],
+      "outputs": [
+        172
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        48,
+        172
+      ],
+      "outputs": [
+        173
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        173
+      ],
+      "outputs": [
+        174
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          32,
+          32
+        ],
+        "filter": [
+          32,
+          32
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        174,
+        277,
+        300
+      ],
+      "outputs": [
+        177
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        177
+      ],
+      "outputs": [
+        178
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        178,
+        264,
+        290
+      ],
+      "outputs": [
+        181
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        181
+      ],
+      "outputs": [
+        182
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        48,
+        182
+      ],
+      "outputs": [
+        183
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        183,
+        172
+      ],
+      "outputs": [
+        184
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        184,
+        355,
+        267
+      ],
+      "outputs": [
+        187
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        187
+      ],
+      "outputs": [
+        188
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        188,
+        343,
+        256
+      ],
+      "outputs": [
+        191
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 24,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        191
+      ],
+      "outputs": [
+        192
+      ],
+      "options": {}
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        188,
+        192
+      ],
+      "outputs": [
+        193
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        193,
+        194
+      ],
+      "outputs": [
+        195
+      ],
+      "options": {
+        "size": [
+          64,
+          64
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        195,
+        357,
+        261
+      ],
+      "outputs": [
+        198
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        25,
+        198
+      ],
+      "outputs": [
+        199
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        199
+      ],
+      "outputs": [
+        200
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          64,
+          64
+        ],
+        "filter": [
+          64,
+          64
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        200,
+        304,
+        329
+      ],
+      "outputs": [
+        203
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        203
+      ],
+      "outputs": [
+        204
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        204,
+        298,
+        317
+      ],
+      "outputs": [
+        207
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        207
+      ],
+      "outputs": [
+        208
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        25,
+        208
+      ],
+      "outputs": [
+        209
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        209,
+        198
+      ],
+      "outputs": [
+        210
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        210,
+        278,
+        301
+      ],
+      "outputs": [
+        213
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        213
+      ],
+      "outputs": [
+        214
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        214,
+        262,
+        287
+      ],
+      "outputs": [
+        217
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 16,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        217
+      ],
+      "outputs": [
+        218
+      ],
+      "options": {}
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        214,
+        218
+      ],
+      "outputs": [
+        219
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        219,
+        220
+      ],
+      "outputs": [
+        221
+      ],
+      "options": {
+        "size": [
+          128,
+          128
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        221,
+        279,
+        291
+      ],
+      "outputs": [
+        224
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        4,
+        224
+      ],
+      "outputs": [
+        225
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "AVERAGE_POOL_2D",
+      "inputs": [
+        225
+      ],
+      "outputs": [
+        226
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          128,
+          128
+        ],
+        "filter": [
+          128,
+          128
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        226,
+        280,
+        358
+      ],
+      "outputs": [
+        229
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        229
+      ],
+      "outputs": [
+        230
+      ],
+      "options": {}
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        230,
+        324,
+        344
+      ],
+      "outputs": [
+        233
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        233
+      ],
+      "outputs": [
+        234
+      ],
+      "options": {}
+    },
+    {
+      "type": "MUL",
+      "inputs": [
+        4,
+        234
+      ],
+      "outputs": [
+        235
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        235,
+        224
+      ],
+      "outputs": [
+        236
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        236,
+        303,
+        330
+      ],
+      "outputs": [
+        239
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        239
+      ],
+      "outputs": [
+        240
+      ],
+      "options": {}
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        240,
+        292,
+        315
+      ],
+      "outputs": [
+        243
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 16,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RELU",
+      "inputs": [
+        243
+      ],
+      "outputs": [
+        244
+      ],
+      "options": {}
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        240,
+        244
+      ],
+      "outputs": [
+        245
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CUSTOM_Convolution2DTransposeBias",
+      "inputs": [
+        245,
+        253,
+        281
+      ],
+      "outputs": [
+        248
+      ],
+      "options": {
+        "stride": [
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        248
+      ],
+      "outputs": [
+        249
+      ],
+      "options": {}
+    }
+  ],
+  "inputIds": [
+    0
+  ],
+  "outputIds": [
+    249
+  ]
+}

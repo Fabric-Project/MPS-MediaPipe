@@ -1,0 +1,3257 @@
+{
+  "ops": [
+    {
+      "type": "PAD",
+      "inputs": [
+        0,
+        2
+      ],
+      "outputs": [
+        187
+      ],
+      "options": {
+        "paddings": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        187,
+        355,
+        488
+      ],
+      "outputs": [
+        188
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        188,
+        440,
+        418
+      ],
+      "outputs": [
+        189
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 24,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        189,
+        451,
+        366
+      ],
+      "outputs": [
+        190
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        190,
+        475,
+        480
+      ],
+      "outputs": [
+        191
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        190,
+        390,
+        333
+      ],
+      "outputs": [
+        192
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 8,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        192,
+        407,
+        317
+      ],
+      "outputs": [
+        193
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        190,
+        193
+      ],
+      "outputs": [
+        194
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "PAD",
+      "inputs": [
+        191,
+        2
+      ],
+      "outputs": [
+        195
+      ],
+      "options": {
+        "paddings": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        195,
+        343,
+        405
+      ],
+      "outputs": [
+        196
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 32,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        196,
+        436,
+        490
+      ],
+      "outputs": [
+        197
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        197,
+        367,
+        318
+      ],
+      "outputs": [
+        198
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        198,
+        426,
+        399
+      ],
+      "outputs": [
+        199
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 96,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        199,
+        330,
+        439
+      ],
+      "outputs": [
+        200
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        200,
+        197
+      ],
+      "outputs": [
+        201
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        201,
+        352,
+        335
+      ],
+      "outputs": [
+        202
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        201,
+        375,
+        462
+      ],
+      "outputs": [
+        203
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 16,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        203,
+        467,
+        483
+      ],
+      "outputs": [
+        204
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "PAD",
+      "inputs": [
+        202,
+        1
+      ],
+      "outputs": [
+        205
+      ],
+      "options": {
+        "paddings": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            2,
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        205,
+        396,
+        446
+      ],
+      "outputs": [
+        206
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 96,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        206,
+        489,
+        322
+      ],
+      "outputs": [
+        207
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        207,
+        408,
+        376
+      ],
+      "outputs": [
+        208
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        208,
+        348,
+        385
+      ],
+      "outputs": [
+        209
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 144,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        209,
+        427,
+        448
+      ],
+      "outputs": [
+        210
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        210,
+        207
+      ],
+      "outputs": [
+        211
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        211,
+        363,
+        319
+      ],
+      "outputs": [
+        212
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        211,
+        473,
+        391
+      ],
+      "outputs": [
+        213
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 24,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        213,
+        392,
+        323
+      ],
+      "outputs": [
+        214
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "PAD",
+      "inputs": [
+        212,
+        2
+      ],
+      "outputs": [
+        215
+      ],
+      "options": {
+        "paddings": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        215,
+        445,
+        347
+      ],
+      "outputs": [
+        216
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 144,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        216,
+        324,
+        380
+      ],
+      "outputs": [
+        217
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        217,
+        463,
+        454
+      ],
+      "outputs": [
+        218
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        218,
+        395,
+        478
+      ],
+      "outputs": [
+        219
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 240,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        219,
+        484,
+        331
+      ],
+      "outputs": [
+        220
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        220,
+        217
+      ],
+      "outputs": [
+        221
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        221,
+        424,
+        442
+      ],
+      "outputs": [
+        222
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        222,
+        346,
+        370
+      ],
+      "outputs": [
+        223
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 240,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        223,
+        444,
+        455
+      ],
+      "outputs": [
+        224
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        224,
+        221
+      ],
+      "outputs": [
+        225
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        225,
+        365,
+        404
+      ],
+      "outputs": [
+        226
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        226,
+        481,
+        332
+      ],
+      "outputs": [
+        227
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 240,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        227,
+        382,
+        406
+      ],
+      "outputs": [
+        228
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        228,
+        325,
+        342
+      ],
+      "outputs": [
+        229
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        229,
+        429,
+        449
+      ],
+      "outputs": [
+        230
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 336,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        230,
+        350,
+        400
+      ],
+      "outputs": [
+        231
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        231,
+        228
+      ],
+      "outputs": [
+        232
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        232,
+        457,
+        411
+      ],
+      "outputs": [
+        233
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        233,
+        336,
+        371
+      ],
+      "outputs": [
+        234
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 336,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        234,
+        421,
+        353
+      ],
+      "outputs": [
+        235
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        235,
+        232
+      ],
+      "outputs": [
+        236
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        236,
+        438,
+        398
+      ],
+      "outputs": [
+        237
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        236,
+        464,
+        430
+      ],
+      "outputs": [
+        238
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 56,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        238,
+        381,
+        362
+      ],
+      "outputs": [
+        239
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "PAD",
+      "inputs": [
+        237,
+        1
+      ],
+      "outputs": [
+        240
+      ],
+      "options": {
+        "paddings": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            2,
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        240,
+        479,
+        327
+      ],
+      "outputs": [
+        241
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 336,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        241,
+        401,
+        416
+      ],
+      "outputs": [
+        242
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        242,
+        321,
+        360
+      ],
+      "outputs": [
+        243
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        243,
+        433,
+        466
+      ],
+      "outputs": [
+        244
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 576,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        244,
+        339,
+        361
+      ],
+      "outputs": [
+        245
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        245,
+        242
+      ],
+      "outputs": [
+        246
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        246,
+        458,
+        474
+      ],
+      "outputs": [
+        247
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        247,
+        386,
+        434
+      ],
+      "outputs": [
+        248
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 576,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        248,
+        476,
+        356
+      ],
+      "outputs": [
+        249
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        249,
+        246
+      ],
+      "outputs": [
+        250
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        250,
+        414,
+        368
+      ],
+      "outputs": [
+        251
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        251,
+        468,
+        328
+      ],
+      "outputs": [
+        252
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 576,
+        "conv_pad": [
+          2,
+          2
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        252,
+        374,
+        485
+      ],
+      "outputs": [
+        253
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        253,
+        250
+      ],
+      "outputs": [
+        254
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        254,
+        397,
+        351
+      ],
+      "outputs": [
+        255
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        255,
+        420,
+        461
+      ],
+      "outputs": [
+        256
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 576,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        256,
+        432,
+        316
+      ],
+      "outputs": [
+        257
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 576,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        257,
+        337,
+        422
+      ],
+      "outputs": [
+        258
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        258,
+        8
+      ],
+      "outputs": [
+        259
+      ],
+      "options": {
+        "size": [
+          16,
+          16
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        259,
+        239
+      ],
+      "outputs": [
+        260
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        260,
+        7
+      ],
+      "outputs": [
+        261
+      ],
+      "options": {
+        "size": [
+          32,
+          32
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        261,
+        214
+      ],
+      "outputs": [
+        262
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        262,
+        6
+      ],
+      "outputs": [
+        263
+      ],
+      "options": {
+        "size": [
+          64,
+          64
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        263,
+        204
+      ],
+      "outputs": [
+        264
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        264,
+        369,
+        344
+      ],
+      "outputs": [
+        265
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 32,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        265,
+        357,
+        450
+      ],
+      "outputs": [
+        266
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        266,
+        5
+      ],
+      "outputs": [
+        267
+      ],
+      "options": {
+        "size": [
+          128,
+          128
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        267,
+        194
+      ],
+      "outputs": [
+        268
+      ],
+      "options": {
+        "activation": "none"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        268,
+        384,
+        482
+      ],
+      "outputs": [
+        269
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 8,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        269,
+        452,
+        320
+      ],
+      "outputs": [
+        270
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        268,
+        270
+      ],
+      "outputs": [
+        271
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        271,
+        341,
+        413
+      ],
+      "outputs": [
+        272
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 8,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        272,
+        470,
+        491
+      ],
+      "outputs": [
+        273
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        271,
+        273
+      ],
+      "outputs": [
+        274
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "RESIZE_BILINEAR",
+      "inputs": [
+        274,
+        4
+      ],
+      "outputs": [
+        275
+      ],
+      "options": {
+        "size": [
+          256,
+          256
+        ],
+        "align_corners": false,
+        "half_pixel_centers": true
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        275,
+        425,
+        372
+      ],
+      "outputs": [
+        276
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 8,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        276,
+        409,
+        437
+      ],
+      "outputs": [
+        277
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        275,
+        277
+      ],
+      "outputs": [
+        278
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        278,
+        373,
+        393
+      ],
+      "outputs": [
+        279
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 8,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        279,
+        431,
+        389
+      ],
+      "outputs": [
+        280
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        278,
+        280
+      ],
+      "outputs": [
+        281
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        281,
+        402,
+        326
+      ],
+      "outputs": [
+        282
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        264,
+        338,
+        340
+      ],
+      "outputs": [
+        283
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        256,
+        453,
+        423
+      ],
+      "outputs": [
+        284
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 576,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        284,
+        359,
+        447
+      ],
+      "outputs": [
+        285
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        285,
+        472,
+        377
+      ],
+      "outputs": [
+        286
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        286,
+        460,
+        443
+      ],
+      "outputs": [
+        287
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "MAX_POOL_2D",
+      "inputs": [
+        285
+      ],
+      "outputs": [
+        288
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "filter": [
+          2,
+          2
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        288,
+        287
+      ],
+      "outputs": [
+        289
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        289,
+        379,
+        387
+      ],
+      "outputs": [
+        290
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        290,
+        487,
+        394
+      ],
+      "outputs": [
+        291
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        289,
+        291
+      ],
+      "outputs": [
+        292
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        292,
+        329,
+        349
+      ],
+      "outputs": [
+        293
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        293,
+        412,
+        345
+      ],
+      "outputs": [
+        294
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        292,
+        294
+      ],
+      "outputs": [
+        295
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        295,
+        459,
+        456
+      ],
+      "outputs": [
+        296
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          2,
+          2
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        296,
+        435,
+        471
+      ],
+      "outputs": [
+        297
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "MAX_POOL_2D",
+      "inputs": [
+        295
+      ],
+      "outputs": [
+        298
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          2,
+          2
+        ],
+        "filter": [
+          2,
+          2
+        ],
+        "activation": "none",
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        298,
+        297
+      ],
+      "outputs": [
+        299
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        299,
+        410,
+        419
+      ],
+      "outputs": [
+        300
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        300,
+        364,
+        378
+      ],
+      "outputs": [
+        301
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        299,
+        301
+      ],
+      "outputs": [
+        302
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        302,
+        403,
+        441
+      ],
+      "outputs": [
+        303
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        303,
+        388,
+        334
+      ],
+      "outputs": [
+        304
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        302,
+        304
+      ],
+      "outputs": [
+        305
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "DEPTHWISE_CONV_2D",
+      "inputs": [
+        305,
+        354,
+        383
+      ],
+      "outputs": [
+        306
+      ],
+      "options": {
+        "padding": "same",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "relu6",
+        "groups": 192,
+        "conv_pad": [
+          1,
+          1
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        306,
+        358,
+        465
+      ],
+      "outputs": [
+        307
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "ADD",
+      "inputs": [
+        305,
+        307
+      ],
+      "outputs": [
+        308
+      ],
+      "options": {
+        "activation": "relu6"
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        308,
+        469,
+        477
+      ],
+      "outputs": [
+        309
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RESHAPE",
+      "inputs": [
+        309,
+        10
+      ],
+      "outputs": [
+        310
+      ],
+      "options": {
+        "shape": [
+          -1,
+          195
+        ],
+        "from_4d": true,
+        "to_4d": false
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        308,
+        486,
+        415
+      ],
+      "outputs": [
+        311
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "RESHAPE",
+      "inputs": [
+        311,
+        3
+      ],
+      "outputs": [
+        312
+      ],
+      "options": {
+        "shape": [
+          -1,
+          117
+        ],
+        "from_4d": true,
+        "to_4d": false
+      }
+    },
+    {
+      "type": "CONV_2D",
+      "inputs": [
+        308,
+        417,
+        428
+      ],
+      "outputs": [
+        313
+      ],
+      "options": {
+        "padding": "valid",
+        "stride": [
+          1,
+          1
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "activation": "none",
+        "groups": 1,
+        "conv_pad": [
+          0,
+          0
+        ],
+        "pre_pad": null
+      }
+    },
+    {
+      "type": "LOGISTIC",
+      "inputs": [
+        313
+      ],
+      "outputs": [
+        314
+      ],
+      "options": {}
+    },
+    {
+      "type": "RESHAPE",
+      "inputs": [
+        314,
+        9
+      ],
+      "outputs": [
+        315
+      ],
+      "options": {
+        "shape": [
+          -1,
+          1
+        ],
+        "from_4d": true,
+        "to_4d": false
+      }
+    }
+  ],
+  "inputIds": [
+    0
+  ],
+  "outputIds": [
+    310,
+    315,
+    282,
+    283,
+    312
+  ]
+}
