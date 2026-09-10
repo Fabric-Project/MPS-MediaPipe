@@ -19,7 +19,7 @@ import Foundation
 /// confirmed against mediapipe/modules/face_detection/
 /// face_detection_short_range.pbtxt; full_range config (192x192 input,
 /// single-layer stride-4 anchor grid, min_score 0.6, and a different --
-/// and differently structured, see MediaPipeTFLiteMPSGraph's
+/// and differently structured, see MediaPipeMPSGraph's
 /// DEPTH_TO_SPACE case -- underlying model, face_detection_full_range_
 /// sparse.tflite) confirmed against face_detection_full_range.pbtxt.
 ///

@@ -10,7 +10,7 @@ import simd
 /// Encodes a rotated crop + normalize directly from a texture into an NHWC
 /// float32 buffer — no CVPixelBuffer, no Vision, no CPU-side pixel copy.
 /// The output buffer is `.storageModeShared` (genuinely unified CPU/GPU
-/// memory on Apple Silicon) and fed directly into MediaPipeTFLiteMPSGraph
+/// memory on Apple Silicon) and fed directly into MediaPipeMPSGraph
 /// as an MPSGraphTensorData -- "GPU writes directly into the model's input
 /// buffer," no intermediate copy.
 ///

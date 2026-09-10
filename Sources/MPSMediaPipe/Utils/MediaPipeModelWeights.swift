@@ -65,7 +65,7 @@ public final class MediaPipeModelWeights
     /// Builds an MPSGraph constant tensor directly from the named weight,
     /// in its native export-time shape (OIHW for conv weights, [out, in]
     /// for linear weights, etc. — callers transpose/reshape as needed per
-    /// op, same convention MediaPipeTFLiteMPSGraph.swift's own op builders
+    /// op, same convention MediaPipeMPSGraph.swift's own op builders
     /// already use).
     public func constant(_ graph: MPSGraph, named name: String) -> MPSGraphTensor
     {

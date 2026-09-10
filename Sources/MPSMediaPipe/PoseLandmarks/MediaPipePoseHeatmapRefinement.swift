@@ -20,11 +20,11 @@ import simd
 ///
 /// The heatmap array is expected in CHW order (channel-major), NOT the
 /// model's own native NHWC -- this is deliberate, not an oversight: every
-/// op in MediaPipeTFLiteMPSGraph.swift operates in NCHW internally, and
+/// op in MediaPipeMPSGraph.swift operates in NCHW internally, and
 /// only outputs that pass through a final RESHAPE get converted back to
 /// NHWC before being flattened (RESHAPE's own layout handling does this).
 /// The heatmap is a raw CONV_2D result with no trailing reshape, so what
-/// MediaPipeTFLiteMPSGraph.run()/submit() actually hands back for it is
+/// MediaPipeMPSGraph.run()/submit() actually hands back for it is
 /// genuinely CHW -- confirmed by numeric validation against the PyTorch
 /// reference (which itself permutes back to NHWC before returning, so
 /// comparing against it directly requires accounting for this). Indexing

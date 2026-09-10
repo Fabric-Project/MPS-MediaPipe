@@ -1,4 +1,4 @@
-// MediaPipeTFLiteMPSGraph.swift
+// MediaPipeMPSGraph.swift
 //
 // From-scratch MPSGraph reimplementation of any MediaPipe "Blaze"-family
 // TFLite model, run directly on GPU — no CoreML. Shared by BlazePalm/
@@ -24,7 +24,7 @@ import Foundation
 import Metal
 import MetalPerformanceShadersGraph
 
-public final class MediaPipeTFLiteMPSGraph
+public final class MediaPipeMPSGraph
 {
     private let graph = MPSGraph()
     private let weights: MediaPipeModelWeights
