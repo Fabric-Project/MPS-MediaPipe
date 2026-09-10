@@ -7,18 +7,11 @@ import Foundation
 import Metal
 import simd
 
-/// Reprojects a MediaPipe segmentation mask, decoded in crop/tensor space,
-/// back into full-image space -- the inverse of MediaPipeCropPreprocessor's
-/// forward crop, using the same centerPixels/rectSizePixels/rotationRadians
-/// rect. Mirrors MediaPipeCropPreprocessor.swift's shape (persistent small
-/// input buffer, one compute pipeline, an encode(...) that appends to a
-/// caller-owned command buffer without committing). Not model-specific:
-/// BlazePose's landmark model feeds this a rotated, cropped 256x256 mask;
-/// a selfie-segmentation-style model feeds it a plain full-frame (center
-/// (0.5,0.5), size (1,1), rotation 0) mask of whatever resolution its own
-/// variant uses -- the degenerate no-crop case works unmodified since
-/// center/size/rotation/maskWidth/maskHeight are all plain parameters, not
-/// assumptions baked into the shader.
+/// Reprojects a segmentation mask, decoded in crop/tensor space, back into
+/// full-image space -- the inverse of MediaPipeCropPreprocessor's forward
+/// crop, using the same rect. Works for both a rotated crop and a
+/// full-frame mask (center (0.5,0.5), size (1,1), rotation 0), since the
+/// rect is a plain parameter rather than assumed by the shader.
 public final class MediaPipeSegmentationMaskProjector
 {
     private struct Uniforms
@@ -65,22 +58,13 @@ public final class MediaPipeSegmentationMaskProjector
         self.maskBuffer = maskBuffer
     }
 
-    /// `centerNormalizedBottomLeft`/`sizeNormalized`/`rotationRadians` are
-    /// the exact same crop rect passed to MediaPipeCropPreprocessor.encode
-    /// for this frame's inference (BlazePose: the landmark crop rect;
-    /// Selfie Segmentation: the degenerate full-frame rect, center
-    /// (0.5,0.5), size (1,1), rotation 0). `maskValues` is the model's raw
-    /// mask output tensor, row-major top-left origin, matching the crop's
-    /// own H,W indexing. `applySigmoid` (default true, matching BlazePose's
-    /// own segmentation head, whose raw tensor is pre-activation logits)
-    /// must be false for a model whose own graph already ends in its own
-    /// sigmoid (e.g. Selfie Segmentation's last op is a real LOGISTIC,
-    /// confirmed by inspecting its resolved op list) -- re-applying sigmoid
-    /// would double-activate, visibly compressing the mask toward a
-    /// uniform grey instead of the intended near-binary confidence field.
-    /// Encodes onto `commandBuffer` without committing -- the caller
-    /// (which already owns whatever command buffer it's building for this
-    /// frame) is responsible for committing.
+    /// `centerNormalizedBottomLeft`/`sizeNormalized`/`rotationRadians` must
+    /// match the rect passed to MediaPipeCropPreprocessor.encode for this
+    /// frame. `maskValues` is the model's raw mask tensor, row-major
+    /// top-left origin. `applySigmoid` (default true) must be false if the
+    /// model's own graph already ends in a sigmoid -- re-applying it would
+    /// double-activate and wash the mask toward uniform grey. Encodes onto
+    /// `commandBuffer` without committing.
     public func encode(
         maskValues: [Float],
         applySigmoid: Bool = true,

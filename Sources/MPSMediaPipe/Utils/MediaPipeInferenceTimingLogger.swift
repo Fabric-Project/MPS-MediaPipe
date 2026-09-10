@@ -1,24 +1,17 @@
 //
 //  MediaPipeInferenceTimingLogger.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 
-/// Throttled per-node inference latency logging, shared by all six
-/// MediaPipe test/comparison nodes (Face/Hand/Pose x Detection/Landmark).
-/// Each call site measures wall-clock time from the moment it starts doing
-/// work for a newly-changed input frame (crop encode included) to the
-/// moment its MPSGraph command buffer actually finishes on the GPU —
-/// `model.run(...)` returning for the sync path, or the `model.submit(...)`
-/// completion handler firing for the async path — not just CPU submission
-/// time. That's the number that actually says how fast a given model runs.
+/// Throttled inference latency logging, keyed by `nodeName`. Measures
+/// wall-clock time to when the GPU actually finishes (not just CPU
+/// submission) -- that's the number that says how fast a model really
+/// runs.
 ///
-/// Logs at most once every `logInterval` seconds per node *type* (keyed by
-/// `Node.name`, e.g. "MediaPipe Pose Detection") — not per instance, so two
-/// copies of the same node in one graph share a throttle bucket and only
-/// one logs per interval. Fine for a debug/profiling aid; revisit with a
-/// per-instance key if that ever actually matters.
+/// Logs at most once every `logInterval` seconds per distinct `nodeName`;
+/// callers sharing a name share a throttle bucket.
 public enum MediaPipeInferenceTimingLogger
 {
     private static let logInterval: TimeInterval = 5.0

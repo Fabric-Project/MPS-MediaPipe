@@ -1,18 +1,15 @@
 //
 //  Jacobi3x3.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 import simd
 
-/// Classic cyclic Jacobi eigenvalue algorithm, specialized to exactly 3x3
-/// symmetric matrices -- the one piece of from-scratch numerical code
-/// FaceGeometrySolver needs (simd/Accelerate don't expose a small dense
-/// SVD/eigendecomposition directly). Well-bounded, standard textbook
-/// algorithm (see e.g. Golub & Van Loan, "Matrix Computations", §8.5) --
-/// independently unit-tested against matrices with known eigenvalues rather
-/// than trusted by inspection alone.
+/// Classic cyclic Jacobi eigenvalue algorithm, specialized to 3x3
+/// symmetric matrices -- simd/Accelerate don't expose a small dense
+/// SVD/eigendecomposition directly. Standard textbook algorithm (Golub &
+/// Van Loan, "Matrix Computations", §8.5).
 enum Jacobi3x3
 {
     /// Returns eigenvalues sorted descending and their corresponding

@@ -2,11 +2,7 @@
 //
 // Loads the flat binary blob + JSON manifest a MediaPipe TFLite model was
 // exported to (name -> {offset, shape, dtype}, keyed by stringified TFLite
-// tensor index) and hands out MPSGraph constant tensors by name. Same
-// manifest format Fabric's own RTMPoseWeights.swift reads for its
-// (unrelated, OpenMMLab-derived) models — an independent implementation of
-// that simple format, not a shared dependency, so this package carries no
-// RTMPose-derived code at all.
+// tensor index) and hands out MPSGraph constant tensors by name.
 
 import Foundation
 import MetalPerformanceShadersGraph
@@ -62,11 +58,9 @@ public final class MediaPipeModelWeights
         return entry.shape
     }
 
-    /// Builds an MPSGraph constant tensor directly from the named weight,
-    /// in its native export-time shape (OIHW for conv weights, [out, in]
-    /// for linear weights, etc. — callers transpose/reshape as needed per
-    /// op, same convention MediaPipeMPSGraph.swift's own op builders
-    /// already use).
+    /// Builds an MPSGraph constant tensor from the named weight, in its
+    /// native export-time shape (OIHW for conv weights, [out, in] for
+    /// linear weights, etc.) -- callers transpose/reshape as needed per op.
     public func constant(_ graph: MPSGraph, named name: String) -> MPSGraphTensor
     {
         let values = self.floatArray(named: name)

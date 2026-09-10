@@ -1,15 +1,14 @@
 //
 //  MediaPipeOneEuroFilter.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 import simd
 
-/// Single-pole low-pass filter -- ports mediapipe/util/filtering/
-/// low_pass_filter.cc verbatim (Apply/ApplyWithAlpha/SetAlpha). The first
-/// call always passes its value straight through (no prior state to blend
-/// against); every call after blends toward the new value by `alpha`.
+/// Single-pole low-pass filter, ported from low_pass_filter.cc. The first
+/// call passes its value straight through; every call after blends toward
+/// the new value by `alpha`.
 final class MediaPipeLowPassFilter
 {
     private var initialized = false
@@ -54,18 +53,12 @@ final class MediaPipeLowPassFilter
     }
 }
 
-/// The "1€ filter" (Casiez et al.) for a single scalar channel -- ports
-/// mediapipe/util/filtering/one_euro_filter.cc's Apply()/GetAlpha()
-/// verbatim (CreateLegacyFilter's own semantics: 0 is "no previous sample
-/// yet", which is what every real wall-clock nanosecond timestamp this
-/// filter will ever see satisfies). The cutoff frequency adapts to the
-/// signal's own estimated speed (its low-pass-filtered derivative): a still
-/// value gets heavily smoothed (cutoff near minCutoff), a fast-moving one
-/// opens up toward less lag. use_filtered_derivative defaults to false in
-/// MediaPipe's own landmarks-smoothing usage, so the derivative here is
-/// always taken against the previous *raw* value, not the previous
-/// filtered one -- matched here by reading `position.rawValue`, not
-/// `position.storedValue`.
+/// The "1€ filter" (Casiez et al.) for a single scalar channel, ported
+/// from one_euro_filter.cc. Cutoff frequency adapts to the signal's
+/// estimated speed: a still value gets heavily smoothed (cutoff near
+/// minCutoff), a fast-moving one opens up toward less lag. The derivative
+/// is taken against the previous raw value, not the previous filtered
+/// one (`use_filtered_derivative=false`).
 final class MediaPipeOneEuroFilter
 {
     private let minCutoff: Float
@@ -85,17 +78,11 @@ final class MediaPipeOneEuroFilter
         self.derivateCutoff = derivateCutoff
     }
 
-    /// `valueScale` is MediaPipe's own value_scale = 1/objectScale (see
-    /// GetObjectScale in landmarks_smoothing_calculator_utils.cc), so the
-    /// same minCutoff/beta behave consistently regardless of how large the
-    /// tracked subject is in frame -- pass 1 to disable this normalization.
-    /// `timestampNanoseconds` must be non-zero and should be monotonically
-    /// increasing; a non-increasing timestamp is passed through unfiltered,
-    /// matching OneEuroFilter::Apply's own guard. `debugTag`, when non-nil,
-    /// throttled-prints every intermediate value (frequency, dvalue,
-    /// edvalue, cutoff, alpha) via MediaPipeSmoothingDiagnosticLogger --
-    /// temporary instrumentation for diagnosing over/under-smoothing without
-    /// hand-deriving the expected numbers.
+    /// `valueScale` normalizes cutoff behavior against tracked-subject size
+    /// (1/objectScale) -- pass 1 to disable. `timestampNanoseconds` must be
+    /// non-zero and increasing; a non-increasing timestamp passes through
+    /// unfiltered. `debugTag`, when non-nil, throttled-logs intermediate
+    /// values via MediaPipeSmoothingDiagnosticLogger.
     func apply(timestampNanoseconds: Int64, value: Float, valueScale: Float = 1, debugTag: String? = nil) -> Float
     {
         guard timestampNanoseconds > self.lastTimeNanoseconds else { return value }
@@ -129,9 +116,9 @@ final class MediaPipeOneEuroFilter
         return result
     }
 
-    /// Resets to the "first sample" state -- the next apply() call passes
-    /// its value straight through unfiltered instead of blending toward a
-    /// stale position, matching mediapipe's EMPTY_LANDMARKS_POLICY_RESET.
+    /// Resets to the "first sample" state: the next apply() call passes
+    /// its value straight through instead of blending toward a stale
+    /// position.
     func reset()
     {
         self.lastTimeNanoseconds = 0
@@ -148,10 +135,7 @@ final class MediaPipeOneEuroFilter
 }
 
 /// Throttled (once per tag per second) diagnostic print of a
-/// MediaPipeOneEuroFilter's own internals -- temporary instrumentation for
-/// diagnosing why the smoothing feels over/under-aggressive without having
-/// to hand-derive the expected numbers; mirrors
-/// MediaPipeInferenceTimingLogger's own throttled-print shape.
+/// MediaPipeOneEuroFilter's internals.
 enum MediaPipeSmoothingDiagnosticLogger
 {
     private static let lock = NSLock()
@@ -175,39 +159,25 @@ enum MediaPipeSmoothingDiagnosticLogger
     }
 }
 
-/// Owns one MediaPipeOneEuroFilter pair (x, y) per landmark index, smoothing
-/// a fixed-size landmark array the way mediapipe/modules/pose_landmark/
-/// pose_landmark_filtering.pbtxt smooths its own main landmarks --
-/// mediapipe's real tuning (minCutoff 0.05, beta 80.0, derivateCutoff 1.0)
-/// is confirmed identical for Pose (pose_landmark_filtering.pbtxt) and Face
-/// (face_landmarks_detector_graph.cc's ConfigureLandmarksSmoothingCalculator);
-/// no equivalent reference exists for Hand (no smoothing pbtxt/graph config
-/// found anywhere in the real repo), so Hand reuses the same proven values
-/// rather than an invented, unsourced tuning.
+/// Owns one MediaPipeOneEuroFilter pair (x, y[, z]) per landmark index,
+/// smoothing a fixed-size landmark array using mediapipe's own pose/face
+/// landmarks-smoothing tuning (Hand has no equivalent reference, so it
+/// reuses the same values).
 ///
-/// A node with only an x/y consumer (MediaPipe Pose Landmarks'
-/// outputLandmarks) uses the 2D smooth(points: [simd_float2], ...)
-/// overload; a node whose landmarks carry meaningful depth downstream
-/// (MediaPipe Face Landmarks' outputLandmarks3D, consumed by
-/// FaceGeometryNode/FaceTransformNode) uses the 3D overload instead, so z
-/// gets the same smoothing treatment rather than leaking raw, unsmoothed
-/// depth alongside smoothed x/y. A given instance is only ever used with
-/// one of the two overloads.
+/// Use the 2D overload when only x/y matter downstream; use the 3D
+/// overload when z carries meaningful depth, so it gets the same
+/// smoothing treatment rather than leaking raw depth. A given instance is
+/// only ever used with one of the two overloads.
 ///
-/// Not thread-safe -- only ever touched from execute() on the graph thread,
-/// same as every other piece of per-node mutable state in these nodes.
+/// Not thread-safe.
 public final class MediaPipeLandmarksSmoothingFilter
 {
-    /// mediapipe/modules/pose_landmark/pose_landmark_filtering.pbtxt +
-    /// face_landmarks_detector_graph.cc's ConfigureLandmarksSmoothingCalculator,
-    /// both verbatim-confirmed identical.
+    /// mediapipe's own pose/face landmarks-smoothing tuning.
     public static let mediaPipeDefaultMinCutoff: Float = 0.05
     public static let mediaPipeDefaultBeta: Float = 80.0
     public static let mediaPipeDefaultDerivateCutoff: Float = 1.0
 
-    /// GetObjectScale's own disable threshold (landmarks_smoothing_
-    /// calculator.proto's min_allowed_object_scale default) -- below this,
-    /// mediapipe passes landmarks through unfiltered for the frame rather
+    /// Below this object scale, pass landmarks through unfiltered rather
     /// than dividing by a near-zero scale.
     private static let minAllowedObjectScale: Float = 1e-6
 
@@ -235,25 +205,14 @@ public final class MediaPipeLandmarksSmoothingFilter
         self.debugLabel = debugLabel
     }
 
-    /// `points` are normalized [0,1] (or Fabric unit space -- any origin
-    /// works, only the *scale* matters here), full-image-relative, matching
-    /// mediapipe's own NormalizedLandmark convention. Filtering happens in
-    /// PIXEL space internally (points scaled by imageWidthPixels/
-    /// imageHeightPixels, filtered, scaled back) because `objectScalePixels`
-    /// -- mediapipe's own GetObjectScale(roi, imageWidth, imageHeight) --
-    /// is itself in pixels: mediapipe's own tuning (minCutoff 0.05, beta
-    /// 80.0 -> "~0.94 alpha when moving fast", per
-    /// ConfigureLandmarksSmoothingCalculator's own comment) only produces
-    /// that response for pixel-scale per-frame deltas (a few pixels/frame
-    /// against a ~200px object scale) -- filtering normalized [0,1] deltas
-    /// directly against a pixel-scale valueScale (1/objectScalePixels)
-    /// makes dvalue three-plus orders of magnitude too small, pinning the
-    /// filter at minCutoff always regardless of real motion (confirmed via
-    /// MediaPipeSmoothingDiagnosticLogger output showing edvalue ~0.0001-
-    /// 0.001 against the ~0.935 edvalue mediapipe's own "fast" reference
-    /// implies). Empty `points` resets filter state so a re-acquired
-    /// subject snaps in immediately instead of smoothing in from a stale
-    /// position.
+    /// `points` are normalized [0,1] (any origin -- only scale matters
+    /// here), full-image-relative. Filtering happens in pixel space
+    /// internally (scaled by imageWidthPixels/imageHeightPixels, filtered,
+    /// scaled back), since `objectScalePixels` is itself in pixels and
+    /// mediapipe's tuning assumes pixel-scale deltas -- filtering
+    /// normalized deltas directly would pin the filter at minCutoff
+    /// regardless of real motion. Empty `points` resets filter state so a
+    /// re-acquired subject snaps in immediately.
     public func smooth(points: [simd_float2], timestampNanoseconds: Int64, objectScalePixels: Float, imageWidthPixels: Float, imageHeightPixels: Float) -> [simd_float2]
     {
         guard points.isEmpty == false else
@@ -283,13 +242,10 @@ public final class MediaPipeLandmarksSmoothingFilter
         return result
     }
 
-    /// 3D counterpart of smooth(points: [simd_float2], ...) -- same
-    /// per-index x/y filters (same pixel-space rationale, see that
-    /// overload's doc comment), plus an independent z filter per index so
-    /// depth is smoothed with the same tuning rather than left raw. z is
-    /// scaled by imageWidthPixels, matching mediapipe's own FaceMesh
-    /// convention that z is "scaled like x" (see MediaPipeFaceLandmarkNode's
-    /// own outputLandmarks3D doc comment).
+    /// 3D counterpart of smooth(points: [simd_float2], ...): same per-index
+    /// x/y filters, plus an independent z filter per index. z is scaled by
+    /// imageWidthPixels, matching mediapipe's FaceMesh convention that z
+    /// is scaled like x.
     public func smooth(points: [simd_float3], timestampNanoseconds: Int64, objectScalePixels: Float, imageWidthPixels: Float, imageHeightPixels: Float) -> [simd_float3]
     {
         guard points.isEmpty == false else
@@ -321,10 +277,8 @@ public final class MediaPipeLandmarksSmoothingFilter
         return result
     }
 
-    /// Exposed so a caller can reset filter state on presence loss even
-    /// when it isn't calling smooth(points: [], ...) that frame (e.g. a
-    /// node that simply stops sending outputLandmarks rather than resending
-    /// an empty array).
+    /// Exposed so a caller can reset filter state on presence loss without
+    /// calling smooth(points: [], ...) that frame.
     public func reset()
     {
         self.xFilters.removeAll()

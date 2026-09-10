@@ -1,55 +1,33 @@
 //
 //  MediaPipePoseHeatmapRefinement.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 import simd
 
-/// Ports mediapipe/calculators/util/refine_landmarks_from_heatmap_calculator.cc
-/// exactly: for each landmark, replaces its x,y with the sigmoid-confidence-
-/// weighted centroid of a `kernelSize`×`kernelSize` window (clamped at the
-/// heatmap edges) centered on the landmark's own already-decoded position in
-/// the heatmap's grid, but only when that window's max confidence clears
-/// `minConfidenceToRefine` — otherwise the landmark is left untouched.
+/// Ports refine_landmarks_from_heatmap_calculator.cc: for each landmark,
+/// replaces its x,y with the sigmoid-confidence-weighted centroid of a
+/// kernelSize x kernelSize window centered on its heatmap position, but
+/// only when the window's max confidence clears `minConfidenceToRefine`.
 ///
-/// `landmarks` and the heatmap are expected in the same normalized-to-crop
+/// `landmarks` and the heatmap must share the same normalized-to-crop
 /// space (BlazePose: landmarks normalized by the 256x256 crop, heatmap a
-/// 64x64 downsample of the same crop — the ratio between the two is exactly
-/// what makes a single shared `landmarks[i]*heatmapSize` lookup correct).
+/// 64x64 downsample of it).
 ///
-/// The heatmap array is expected in CHW order (channel-major), NOT the
-/// model's own native NHWC -- this is deliberate, not an oversight: every
-/// op in MediaPipeMPSGraph.swift operates in NCHW internally, and
-/// only outputs that pass through a final RESHAPE get converted back to
-/// NHWC before being flattened (RESHAPE's own layout handling does this).
-/// The heatmap is a raw CONV_2D result with no trailing reshape, so what
-/// MediaPipeMPSGraph.run()/submit() actually hands back for it is
-/// genuinely CHW -- confirmed by numeric validation against the PyTorch
-/// reference (which itself permutes back to NHWC before returning, so
-/// comparing against it directly requires accounting for this). Indexing
-/// here matches that reality rather than "fixing" it upstream in the
-/// shared interpreter, which every other MediaPipe model also depends on
-/// and where this same layout question doesn't otherwise arise (every
-/// other model's raw outputs are 1D/2D by the time they're returned).
+/// `heatmap` is expected in CHW order, not the model's native NHWC --
+/// MediaPipeMPSGraph's raw CONV_2D output (no trailing reshape) is
+/// genuinely CHW; indexing here matches that.
 ///
-/// `refine_presence`/`refine_visibility` are intentionally not implemented —
-/// mediapipe/modules/pose_landmark/tensors_to_pose_landmarks_and_segmentation.pbtxt
-/// leaves both at RefineLandmarksFromHeatmapCalculatorOptions' own proto
-/// default of `false`; only `kernel_size` is overridden there (to 7, from a
-/// default of 9), and `min_confidence_to_refine` is left at its default 0.5
-/// (confirmed directly against that calculator's .proto).
-///
-/// Pure Swift, no CoreML/Metal dependency — independently unit-testable,
-/// matching MediaPipeSSDDetectorDecoder.swift's pattern.
+/// `refine_presence`/`refine_visibility` are not implemented (both default
+/// false upstream); only `kernel_size`/`min_confidence_to_refine` apply.
 public enum MediaPipePoseHeatmapRefinement
 {
     public static let defaultKernelSize = 7
     public static let defaultMinConfidenceToRefine: Float = 0.5
 
-    /// `heatmap` is the flattened `[channelCount, heatmapHeight, heatmapWidth]`
-    /// (CHW) tensor, row-major — channel `i` is landmark `i`'s confidence map
-    /// (see this type's own header for why CHW, not the model's native HWC).
+    /// `heatmap` is the flattened [channelCount, heatmapHeight, heatmapWidth]
+    /// (CHW) tensor, row-major -- channel i is landmark i's confidence map.
     /// `landmarks.count` must equal `channelCount`.
     public static func refine(
         landmarks: [simd_float2], heatmap: [Float],

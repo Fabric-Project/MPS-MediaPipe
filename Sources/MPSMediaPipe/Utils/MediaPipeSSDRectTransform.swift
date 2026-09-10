@@ -1,32 +1,20 @@
 //
 //  MediaPipeSSDRectTransform.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 
 /// Projects a "Blaze"-family SSD detection from the detector's letterboxed
 /// tensor space into full-image space, then derives the rotated square ROI
-/// fed to the corresponding landmark model (DetectionsToRectsCalculator +
-/// RectTransformationCalculator). Shared by BlazePalm (hand) and BlazeFace,
-/// which use this exact calculator pair with different rotation keypoints/
-/// target angle/scale/shift.
+/// fed to the corresponding landmark model. Shared by BlazePalm and
+/// BlazeFace, which use different rotation keypoints/target angle/scale/
+/// shift.
 ///
-/// BlazePalm: rotation keypoints (wrist=0, middleMCP=2), target 90 (a real
-/// MediaPipe proto quirk — see MediaPipeSSDDetectorDecoder.computeRotation's
-/// doc comment), scale 2.6, shift_y -0.5. Ported from and validated against
-/// fasthands.pipeline.letterbox_projection/project_detection/
-/// HandLandmarker._detect_rects (a validated third-party port) to float32
-/// precision on the real bundled MediaPipeHandDetector model's output on a
-/// real image.
-///
-/// BlazeFace: rotation keypoints (leftEye=0, rightEye=1), target 0, scale
-/// 1.5 (both axes), no shift — confirmed directly against
-/// mediapipe/modules/face_landmark/face_detection_front_detection_to_roi.pbtxt.
-/// Unlike BlazePalm, this has no local third-party reference to check
-/// against — derived from primary source and sanity-checked with hand-
-/// computed cases (horizontal eyes -> 0 rotation, vertical eyes -> 90°),
-/// not validated end-to-end against a real detected face.
+/// BlazePalm: rotation keypoints (wrist=0, middleMCP=2), target 90 (raw
+/// radians, not degrees -- a MediaPipe proto quirk), scale 2.6, shift_y
+/// -0.5. BlazeFace: rotation keypoints (leftEye=0, rightEye=1), target 0,
+/// scale 1.5 (both axes), no shift.
 public enum MediaPipeSSDRectTransform
 {
     /// DetectionProjectionCalculator's matrix for the full-image, non-
@@ -111,13 +99,9 @@ public enum MediaPipeSSDRectTransform
     }
 
     /// RectTransformationCalculator's own tail, shared by every ROI-
-    /// derivation function in this file regardless of how center/size/
-    /// rotation were computed (box-based, alignment-point-based, or
-    /// oriented-bounding-box-based) -- this behavior belongs to
-    /// RectTransformationCalculator itself, not to whichever calculator fed
-    /// it. `width`/`height` in are normalized full-image, top-left origin,
-    /// pre-shift/pre-scale; same on the way out (post shift, square_long,
-    /// and scale).
+    /// derivation function in this file. `width`/`height` in are
+    /// normalized full-image, pre-shift/pre-scale; out are post shift,
+    /// square_long, and scale.
     private static func finalizeRect(
         cx: Float, cy: Float, width: Float, height: Float, rotation: Float,
         imageWidth: Float, imageHeight: Float,
@@ -149,27 +133,11 @@ public enum MediaPipeSSDRectTransform
         return (cx: cx, cy: cy, width: rectWidth, height: rectHeight, rotation: rotation)
     }
 
-    /// (cx, cy, width, height) normalized full-image, top-left origin, plus
-    /// rotation in radians — ports mediapipe/calculators/util/
-    /// alignment_points_to_rects_calculator.cc's AlignmentPointsRectsCalculator
-    /// exactly: unlike `rect(...)` above (box-based, used by BlazeFace/
-    /// BlazePalm), size and center come directly from the two rotation
-    /// keypoints themselves, not the SSD detection box — BlazePose's
-    /// detector uses this because the two alignment keypoints (hip center,
-    /// a body-size/rotation reference point) are the meaningful geometry,
-    /// not the anchor-regressed box. `detection.xmin/width/height` are
-    /// unused here. Confirmed against the real calculator source: center =
-    /// keypoint[start] in pixel space, box size = 2x the pixel distance
-    /// between the two keypoints (a square in pixel space, though not
-    /// necessarily in normalized space when imageWidth != imageHeight —
-    /// matches `rect->set_width(box_size / image_width)`, `set_height
-    /// (box_size / image_height)` precisely). The final rectScale/
-    /// square_long finalization (`longSide`/`rectScale` below) is shared,
-    /// unmodified logic from `rect(...)` above — that behavior belongs to
-    /// RectTransformationCalculator, not to which center/size calculator
-    /// fed it, and BlazePose's own config also sets `square_long: true`.
-    /// `rectShiftX`/`rectShiftY` default to 0 (BlazePose's own config has
-    /// no shift).
+    /// Ports AlignmentPointsRectsCalculator: unlike `rect()` (box-based),
+    /// size and center come directly from the two rotation keypoints --
+    /// center = keypoint[start] in pixel space, box size = 2x the pixel
+    /// distance between the two keypoints. `detection.xmin/width/height`
+    /// are unused. `rectShiftX`/`rectShiftY` default to 0.
     public static func alignmentPointsRect(
         from detection: ProjectedDetection, imageWidth: Float, imageHeight: Float,
         rotationKeypoints: (start: Int, end: Int), targetAngleRadians: Float,
@@ -197,26 +165,15 @@ public enum MediaPipeSSDRectTransform
         )
     }
 
-    /// Ports mediapipe/modules/hand_landmark/calculators/
-    /// hand_landmarks_to_rect_calculator.cc's HandLandmarksToRectCalculator
-    /// exactly -- a third, distinct center/size/rotation algorithm (neither
-    /// box-based like `rect()` nor two-point-distance-based like
-    /// `alignmentPointsRect()`): rotation comes from the wrist and a
-    /// *non-uniformly-weighted* average of three finger MCP joints (despite
-    /// the real source's own misleading "PIP" constant names -- traced
-    /// through its GetPartialLandmarks index indirection and confirmed
-    /// these resolve to the MCP joints; the doc comment on this function's
-    /// caller explains the trace), then width/height/center come from an
-    /// oriented bounding box: every point in a fixed 12-point subset
-    /// (wrist, thumb CMC/MCP/IP, and each of the other four fingers'
-    /// MCP/PIP -- deliberately excluding fingertips/thumb-tip so extended
-    /// fingers don't blow out the box) is rotated into the candidate
-    /// orientation, axis-aligned min/max taken in that rotated frame, then
-    /// the resulting center is rotated back. `points` must be exactly this
-    /// 12-point subset, normalized full-image top-left-origin, in the
-    /// calculator's own order: [wrist, thumbCMC, thumbMCP, thumbIP,
+    /// Ports HandLandmarksToRectCalculator: rotation comes from the wrist
+    /// and a weighted average of three finger MCP joints (the source's own
+    /// constant names say "PIP", but they resolve to MCP joints); center/
+    /// size come from an oriented bounding box over a fixed 12-point
+    /// subset (excludes fingertips so extended fingers don't blow out the
+    /// box). `points` must be exactly this subset, normalized full-image
+    /// top-left-origin, in order: [wrist, thumbCMC, thumbMCP, thumbIP,
     /// indexMCP, indexPIP, middleMCP, middlePIP, ringMCP, ringPIP,
-    /// pinkyMCP, pinkyPIP] -- i.e. Fabric's own 21-point indices
+    /// pinkyMCP, pinkyPIP] -- the 21-point indices
     /// [0,1,2,3,5,6,9,10,13,14,17,18], the caller's responsibility to slice.
     public static func handLandmarksRect(
         points: [(x: Float, y: Float)], imageWidth: Float, imageHeight: Float,
@@ -226,9 +183,8 @@ public enum MediaPipeSSDRectTransform
         guard points.count == 12 else { return nil }
 
         let wrist = (x: points[0].x * imageWidth, y: points[0].y * imageHeight)
-        // (indexMCP + ringMCP) / 2, then averaged again with middleMCP --
-        // middle gets 2x the weight of index/ring, matching the real
-        // calculator's own two-step averaging exactly (not a naive 1/3 each).
+        // (indexMCP + ringMCP) / 2, then averaged with middleMCP -- middle
+        // gets 2x the weight of index/ring.
         let indexMCP = points[4], middleMCP = points[6], ringMCP = points[8]
         let averageX = (((indexMCP.x + ringMCP.x) / 2) + middleMCP.x) / 2 * imageWidth
         let averageY = (((indexMCP.y + ringMCP.y) / 2) + middleMCP.y) / 2 * imageHeight
@@ -237,16 +193,14 @@ public enum MediaPipeSSDRectTransform
             from: wrist, to: (x: averageX, y: averageY), targetAngleRadians: targetAngleRadians
         )
 
-        // Axis-aligned center of the *un-rotated* points, normalized space
-        // (matches the real calculator's own `axis_aligned_center`).
+        // Axis-aligned center of the un-rotated points, normalized space.
         let xs = points.map(\.x), ys = points.map(\.y)
         let axisAlignedCenterX = (xs.max()! + xs.min()!) / 2
         let axisAlignedCenterY = (ys.max()! + ys.min()!) / 2
 
-        // Project every point into the candidate orientation (reverse_angle
-        // = -rotation) around that center, in pixel space, and take the
-        // axis-aligned extent there -- that extent *is* the oriented box's
-        // width/height in pixels.
+        // Project each point into the candidate orientation (reverse_angle
+        // = -rotation) around that center; the axis-aligned extent there
+        // is the oriented box's width/height.
         let reverseAngle = MediaPipeSSDDetectorDecoder.normalizeRadians(-rotation)
         let cosR = cos(reverseAngle), sinR = sin(reverseAngle)
 
@@ -268,12 +222,9 @@ public enum MediaPipeSSDRectTransform
         let projectedCenterX = (maxX + minX) / 2
         let projectedCenterY = (maxY + minY) / 2
 
-        // Rotate the projected center back by +rotation and add back the
-        // pixel-space axis-aligned center -- matches the real calculator's
-        // own final center formula precisely (not the more common "rotate
-        // by -reverseAngle" shortcut, since reverseAngle and rotation are
-        // independently normalized, not guaranteed exact negatives of each
-        // other after wraparound).
+        // Rotate back by +rotation, not -reverseAngle -- the two are
+        // independently normalized, not guaranteed exact negatives after
+        // wraparound.
         let cosF = cos(rotation), sinF = sin(rotation)
         let centerXPixels = projectedCenterX * cosF - projectedCenterY * sinF + imageWidth * axisAlignedCenterX
         let centerYPixels = projectedCenterX * sinF + projectedCenterY * cosF + imageHeight * axisAlignedCenterY

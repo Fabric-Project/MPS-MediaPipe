@@ -1,32 +1,19 @@
 //
 //  MediaPipeFaceLandmarkProjection.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 import simd
 
-/// Decodes FaceMesh's raw outputs (1404 floats = 468 x,y,z; 1 face-presence
-/// flag) and projects screen-space landmarks back through the rotated crop
-/// rect into full-image normalized coordinates. Ported from mediapipe's
-/// actual graph config (mediapipe/modules/face_landmark/
-/// face_landmark_cpu.pbtxt, tensors_to_face_landmarks.pbtxt) — no local
-/// third-party reference exists for this model (unlike
-/// MediaPipeHandLandmarkProjection, which fasthands.pipeline already
-/// validated), so this was derived directly from the calculator source and
-/// sanity-checked with hand-computed cases, not validated end-to-end
-/// against a real detected face.
+/// Decodes FaceMesh's raw outputs (1404 floats = 468 x,y,z, plus a
+/// face-presence flag) and projects them through the rotated crop rect
+/// into full-image normalized coordinates.
 ///
-/// Differs from the hand landmark model's decode in three confirmed ways:
-/// `normalize_z` defaults to 1.0 here (TensorsToLandmarksCalculatorOptions'
-/// own proto default — the hand model's config explicitly overrides it to
-/// 0.4, FaceMesh's does not), presence needs an explicit sigmoid
-/// (TensorsToFloatsCalculatorOptions.activation: SIGMOID in the graph,
-/// applied outside the model itself — the hand port's third-party reference
-/// reads hand presence raw, unsigmoided, which this deliberately does not
-/// copy since there's no equivalent validated reference for face to check
-/// that assumption against), and there is no handedness or world-landmark
-/// equivalent at all for the base (non-attention) FaceMesh variant.
+/// normalize_z defaults to 1.0 here (the hand landmark model overrides it
+/// to 0.4); presence needs an explicit sigmoid, applied outside the model.
+/// No handedness or world-landmark equivalent exists for this (non-
+/// attention) FaceMesh variant.
 public enum MediaPipeFaceLandmarkProjection
 {
     public static let landmarkSize: Float = 192
@@ -35,14 +22,9 @@ public enum MediaPipeFaceLandmarkProjection
     public static let minFacePresenceConfidence: Float = 0.5
     static let landmarkCount = 468
 
-    /// mediapipe/modules/face_landmark/face_landmark_landmarks_to_roi.pbtxt's
-    /// own DetectionsToRectsCalculator + RectTransformationCalculator config
-    /// -- mesh indices 33 (left eye, inner corner) and 263 (right eye, outer
-    /// corner), target angle 0, scale 1.5x1.5, no shift. Box-based (like the
-    /// detector's own rect()), not alignment-point-based -- confirmed
-    /// directly against the real pbtxt, not assumed equal to the detector's
-    /// own config (which uses different rotation keypoints: raw detector
-    /// keypoints 0/1, the two eyes, not mesh indices 33/263).
+    /// Mesh indices 33 (left eye, inner corner) and 263 (right eye, outer
+    /// corner), target angle 0, scale 1.5 -- box-based like the detector's
+    /// own rect(), not alignment-point-based.
     private static let trackingRotationKeypoints = (start: 33, end: 263)
     private static let trackingTargetAngleRadians: Float = 0.0
     private static let trackingRectScale: Float = 1.5
@@ -55,10 +37,8 @@ public enum MediaPipeFaceLandmarkProjection
     }
 
     /// `landmarksRaw` is the flat 1404-float (468x3) output, `presenceRaw`
-    /// the single raw (pre-sigmoid) face-presence logit. Returns nil when
-    /// presence is below threshold (ThresholdingCalculator) — matches the
-    /// official graph dropping the face entirely rather than emitting a
-    /// low-confidence result.
+    /// the raw (pre-sigmoid) face-presence logit. Returns nil when presence
+    /// is below threshold.
     public static func project(
         landmarksRaw: [Float], presenceRaw: Float,
         rect: (cx: Float, cy: Float, width: Float, height: Float, rotation: Float)
@@ -91,16 +71,10 @@ public enum MediaPipeFaceLandmarkProjection
         return Face(landmarks: landmarks)
     }
 
-    /// Re-derives a tracking ROI from this frame's own (unsmoothed)
-    /// landmarks, the same way MediaPipe's face_landmark_landmarks_to_roi.pbtxt
-    /// does: a box enclosing all 468 landmarks (LandmarksToDetectionCalculator),
-    /// rotated using mesh indices 33/263 (DetectionsToRectsCalculator).
-    /// `landmarks` are bottom-left-origin normalized (matching this type's
-    /// own `project(...)` output once a caller has flipped it to that
-    /// convention, e.g. MediaPipeFaceLandmarkNode's own landmark space) --
-    /// this function flips internally to top-left for the rect math, then
-    /// flips the result back, so both `landmarks` in and `region` out are
-    /// bottom-left-origin.
+    /// Re-derives a tracking ROI from this frame's landmarks: a box
+    /// enclosing all 468 points, rotated using mesh indices 33/263.
+    /// `landmarks` and the returned `region` are both bottom-left-origin
+    /// normalized; this flips internally to top-left for the rect math.
     public static func trackedRegion(from landmarks: [simd_float3], presentationSize: CGSize) -> (region: simd_float4, rotation: Float)?
     {
         guard landmarks.count > max(Self.trackingRotationKeypoints.start, Self.trackingRotationKeypoints.end) else { return nil }

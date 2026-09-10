@@ -5,19 +5,14 @@
 
 import Foundation
 
-/// BlazePose's detector: owns every geometry fact specific to this
-/// pretrained model and the full decode pipeline that consumes them —
-/// anchor generation, SSD decode, weighted NMS, letterbox projection,
-/// and rotated-rect derivation. Unlike MediaPipeHandDetector/
-/// MediaPipeFaceDetector (box-based ROI), BlazePose's own detector
-/// derives its ROI from two alignment keypoints, not the SSD box itself
-/// — see MediaPipeSSDRectTransform.alignmentPointsRect's own doc comment.
+/// BlazePose detector. Owns anchor generation, SSD decode, weighted NMS,
+/// letterbox projection, and rotated-rect derivation. Unlike the face/hand
+/// detectors (box-based ROI), the ROI here comes from two alignment
+/// keypoints rather than the SSD box itself.
 ///
-/// `decodeDetections`' returned region/keypoints are MediaPipe's native
-/// top-left-origin normalized full-image space — callers in a
-/// bottom-left-origin coordinate system (e.g. Fabric's own port
-/// convention) flip on their own side, since that's a caller convention,
-/// not a fact about this model.
+/// `decodeDetections` returns MediaPipe's native top-left-origin
+/// normalized full-image space; callers in a bottom-left-origin
+/// convention flip on their own side.
 public enum MediaPipePoseDetector
 {
     public static let detectSize = 224
@@ -26,14 +21,8 @@ public enum MediaPipePoseDetector
 
     private static let numKeypoints = 4
     private static let rotationKeypoints = (start: 0, end: 1) // mid-hip -> full-body size/rotation point
-    /// mediapipe/modules/pose_landmark/pose_detection_to_roi.pbtxt sets
-    /// `rotation_vector_target_angle_degrees: 90` -- the plain,
-    /// properly-degrees-converted field (confirmed against
-    /// detections_to_rects_calculator.cc's Open(): this field goes through
-    /// `M_PI * degrees / 180`, unlike the separate, unitless
-    /// `rotation_vector_target_angle` field BlazePalm's own config uses --
-    /// so unlike BlazePalm's proto quirk, this is NOT "90 raw radians", it
-    /// is 90 degrees.
+    /// pose_detection_to_roi.pbtxt's rotation_vector_target_angle_degrees:
+    /// 90 -- properly degrees-converted, unlike BlazePalm's raw-radians quirk.
     private static let targetAngleRadians: Float = .pi / 2
     private static let rectScale: Float = 1.25
 

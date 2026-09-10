@@ -5,31 +5,20 @@
 
 import Foundation
 
-/// BlazePalm hand detector: owns every geometry fact specific to this
-/// pretrained model (anchor grid, keypoint count/rotation pair, target
-/// angle, ROI scale/shift) and the full decode pipeline that consumes
-/// them — anchor generation, SSD decode, weighted NMS, letterbox
-/// projection, and rotated-rect derivation (see MediaPipeSSDAnchors/
-/// MediaPipeSSDDetectorDecoder/MediaPipeSSDRectTransform's own doc
-/// comments for the shared algorithms this composes). A caller only
-/// needs the model's raw two-tensor output plus the image it was run
-/// against; it never needs to know this model's own magic numbers.
+/// BlazePalm hand detector. Owns anchor generation, SSD decode, weighted
+/// NMS, letterbox projection, and rotated-rect derivation.
 ///
-/// `decodeDetections`' returned region/keypoints are MediaPipe's native
-/// top-left-origin normalized full-image space — callers in a
-/// bottom-left-origin coordinate system (e.g. Fabric's own port
-/// convention) flip on their own side, since that's a caller convention,
-/// not a fact about this model.
+/// `decodeDetections` returns MediaPipe's native top-left-origin
+/// normalized full-image space; callers in a bottom-left-origin
+/// convention flip on their own side.
 public enum MediaPipeHandDetector
 {
     public static let detectSize = 192
     public static let resourcePrefix = "MediaPipeHandDetector"
 
-    // BlazePalm-specific constants (see MediaPipeSSDDetectorDecoder/
-    // MediaPipeSSDRectTransform's doc comments for BlazeFace's own values).
     private static let numKeypoints = 7
     private static let rotationKeypoints = (start: 0, end: 2) // wrist -> middle finger MCP
-    private static let targetAngleRadians: Float = 90.0 // a real MediaPipe proto quirk -- see MediaPipeSSDDetectorDecoder.computeRotation's doc comment
+    private static let targetAngleRadians: Float = 90.0 // raw radians, not degrees -- a MediaPipe proto quirk
     private static let rectScale: Float = 2.6
     private static let rectShiftY: Float = -0.5
 

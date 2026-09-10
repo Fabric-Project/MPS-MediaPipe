@@ -8,18 +8,11 @@ import Metal
 import simd
 
 /// Encodes a rotated crop + normalize directly from a texture into an NHWC
-/// float32 buffer — no CVPixelBuffer, no Vision, no CPU-side pixel copy.
-/// The output buffer is `.storageModeShared` (genuinely unified CPU/GPU
-/// memory on Apple Silicon) and fed directly into MediaPipeMPSGraph
-/// as an MPSGraphTensorData -- "GPU writes directly into the model's input
-/// buffer," no intermediate copy.
+/// float32 buffer, ready for MPSGraph inference with no CPU-side copy.
 ///
-/// `outputPixelRange` is fixed per instance (not per call), since a given
-/// preprocessor is always paired with one model: BlazePalm/BlazeFace's
-/// landmark models both normalize to [0,1], but BlazeFace's *detector*
-/// normalizes to [-1,1] — confirmed against each model's own
-/// ImageToTensorCalculatorOptions.output_tensor_float_range, not assumed
-/// from BlazePalm's convention.
+/// `outputPixelRange` is fixed per instance: most models normalize to
+/// [0,1], but some detectors expect [-1,1] (see the model's own
+/// ImageToTensorCalculatorOptions.output_tensor_float_range).
 public final class MediaPipeCropPreprocessor
 {
     private struct Uniforms
@@ -69,16 +62,13 @@ public final class MediaPipeCropPreprocessor
         self.outputBuffer = outputBuffer
     }
 
-    /// Convenience entry point for callers that want preprocessing as its
-    /// own submission (a synchronous inference path). An asynchronous path
-    /// should use the command-buffer overload below so preprocessing and
-    /// MPSGraph inference share one submission with no intermediate wait.
+    /// Synchronous convenience overload -- commits its own command buffer
+    /// and waits. Use the command-buffer overload to share one submission
+    /// with subsequent MPSGraph inference.
     ///
-    /// `textureTransform`/`presentationSize` describe how `texture`'s own
-    /// storage maps onto presentation pixels (an arbitrary rotation/flip a
-    /// caller's own image type may apply) -- pass `matrix_identity_float4x4`
-    /// and the texture's own pixel dimensions if the texture has no such
-    /// transform.
+    /// `textureTransform`/`presentationSize` describe how `texture` maps
+    /// onto presentation pixels; pass identity and the texture's own
+    /// dimensions if there's no transform.
     @discardableResult
     public func encode(
         texture: MTLTexture,
@@ -110,14 +100,10 @@ public final class MediaPipeCropPreprocessor
     }
 
     /// `centerNormalizedBottomLeft`/`sizeNormalized` are bottom-left-origin,
-    /// normalized [0,1]; `rotationRadians` is
-    /// MediaPipeSSDDetectorDecoder.computeRotation's own convention
-    /// (top-left/Y-down, independent of the coordinate's origin choice —
-    /// see that type's doc comment). Encodes onto `commandBuffer` without
-    /// committing, so MPSGraph inference can be appended to the same
-    /// command buffer (an asynchronous submission path) — the caller is
-    /// responsible for committing (and, for the convenience overload above,
-    /// waiting).
+    /// normalized [0,1]; `rotationRadians` uses
+    /// MediaPipeSSDDetectorDecoder's convention (top-left/Y-down). Encodes
+    /// onto `commandBuffer` without committing -- the caller commits (and
+    /// waits, if needed).
     @discardableResult
     public func encode(
         texture: MTLTexture,

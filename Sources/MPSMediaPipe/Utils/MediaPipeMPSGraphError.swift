@@ -1,10 +1,8 @@
 // MediaPipeMPSGraphError.swift
 //
-// This package's own error type -- deliberately simpler than Fabric's own
-// FabricError (no severity/category taxonomy, which is Fabric-app-specific
-// error-reporting infrastructure out of scope for a standalone library). A
-// consuming app that wants richer classification can inspect `message` or
-// wrap this error itself.
+// A deliberately simple error type -- no severity or category taxonomy. A
+// caller wanting richer classification can inspect `message` or wrap this
+// error itself.
 
 import Foundation
 

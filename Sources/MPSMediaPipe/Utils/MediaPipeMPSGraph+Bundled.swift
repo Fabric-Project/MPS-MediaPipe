@@ -1,9 +1,8 @@
 // MediaPipeMPSGraph+Bundled.swift
 //
-// Bundle.module is scoped to whichever module it's referenced from -- a
-// consumer of this package (Fabric, or a standalone app) can't do its own
-// Bundle.module lookup and reach this package's own bundled model files.
-// This is the entry point consumers use instead.
+// Bundle.module is scoped to whichever module it's referenced from, so a
+// consumer of this package can't do its own Bundle.module lookup to reach
+// these bundled model files. This is the entry point to use instead.
 
 import Foundation
 import Metal

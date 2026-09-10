@@ -1,56 +1,40 @@
 //
 //  FaceGeometrySolver.swift
-//  Fabric
+//  MPSMediaPipe
 //
 
 import Foundation
 import simd
 
-/// Ports MediaPipe's Face Geometry pipeline (mediapipe/modules/face_geometry/
-/// libs/{geometry_pipeline.cc,procrustes_solver.cc}) to pure Swift — fits a
-/// static canonical 3D face model to a frame's 468 FaceMesh landmarks via a
-/// weighted-orthogonal-Procrustes solve, producing (a) a deformed mesh
-/// sharing the canonical model's topology/UVs, with head pose normalized
-/// out, and (b) a 4x4 rigid transform (uniform scale + rotation +
-/// translation only) separating head pose from facial expression.
+/// Ports MediaPipe's Face Geometry pipeline (face_geometry/libs/
+/// {geometry_pipeline.cc,procrustes_solver.cc}) -- fits a static canonical
+/// 3D face model to a frame's 468 FaceMesh landmarks via weighted-
+/// orthogonal Procrustes, producing (a) a deformed mesh with head pose
+/// normalized out, and (b) a 4x4 rigid transform (scale + rotation +
+/// translation) separating head pose from expression.
 ///
-/// Ported from `ScreenToMetricSpaceConverter::Convert`'s
-/// `FACE_LANDMARK_PIPELINE` branch only (confirmed via
-/// geometry_pipeline_metadata_landmarks.pbtxt's own
-/// `input_source: FACE_LANDMARK_PIPELINE`) -- the two
-/// `FACE_DETECTION_PIPELINE`-only Z-rewrite blocks in the C++ source are
-/// deliberately omitted since they don't apply to landmarks from
-/// MediaPipeFaceLandmarkNode. Environment constants (vertical FOV 63
-/// degrees, near 1cm, far 10000cm) confirmed against
-/// mediapipe/graphs/face_effect/face_effect_gpu.pbtxt.
+/// Only the FACE_LANDMARK_PIPELINE branch is ported (not
+/// FACE_DETECTION_PIPELINE). Environment constants: vertical FOV 63
+/// degrees, near 1cm, far 10000cm.
 ///
-/// Input landmarks are expected in Fabric's own bottom-left-origin
-/// convention (matching MediaPipeFaceLandmarkNode.outputLandmarks3D) --
-/// this is already the coordinate state MediaPipe's own `ProjectXY` would
-/// produce internally after flipping its top-left-origin input, so this
-/// port's `projectXY` omits that flip rather than re-adding then re-removing
-/// it.
-///
-/// Pure Swift, no CoreML/Metal/Satin dependency -- independently
-/// unit-testable, mirroring MediaPipeSSDDetectorDecoder.swift's pattern.
+/// `screenLandmarks` are expected bottom-left-origin normalized, with
+/// MediaPipe's own relative Z -- already the state MediaPipe's own
+/// ProjectXY produces internally, so `projectXY` here omits the
+/// corresponding flip.
 public enum FaceGeometrySolver
 {
     public static let landmarkCount = 468
 
-    // MARK: - Bundled canonical face model (extracted from mediapipe's own
-    // geometry_pipeline_metadata_landmarks.pbtxt `canonical_mesh` +
-    // `procrustes_landmark_basis` fields -- see Models/Face/
-    // CanonicalFaceModel.json and its extraction script).
+    // MARK: - Bundled canonical face model (see Models/Face/CanonicalFaceModel.json)
 
     public static let canonicalPositions: [simd_float3] = CanonicalModel.shared.positions
     public static let canonicalUVs: [simd_float2] = CanonicalModel.shared.uvs
     public static let canonicalTriangles: [(UInt32, UInt32, UInt32)] = CanonicalModel.shared.triangles
     private static let procrustesWeights: [Float] = CanonicalModel.shared.procrustesWeights
 
-    // MARK: - Environment (mediapipe/graphs/face_effect/face_effect_gpu.pbtxt)
+    // MARK: - Environment
 
-    /// Public: consumers doing their own cm-to-real-world-unit conversion
-    /// (e.g. a caller-side FaceTransformNode) need this same constant.
+    /// Public: callers doing their own cm-to-real-world-unit conversion need this.
     public static let verticalFieldOfViewDegrees: Float = 63.0
     private static let nearPlane: Float = 1.0
     private static let farPlane: Float = 10000.0
@@ -68,11 +52,9 @@ public enum FaceGeometrySolver
         var far: Float
     }
 
-    /// `screenLandmarks` are normalized [0,1], bottom-left origin (Fabric's
-    /// convention), MediaPipe's own relative-Z (scaled like X, see
-    /// MediaPipeFaceLandmarkProjection). Returns nil for a degenerate
-    /// (too-compact) or malformed input, mirroring the source's own
-    /// rejection cases.
+    /// `screenLandmarks` are normalized [0,1], bottom-left origin, with
+    /// MediaPipe's own relative Z. Returns nil for a degenerate
+    /// (too-compact) or malformed input.
     public static func solve(screenLandmarks: [simd_float3], frameWidth: Float, frameHeight: Float) -> (metricLandmarks: [simd_float3], poseTransform: simd_float4x4)?
     {
         guard screenLandmarks.count == landmarkCount, frameWidth > 0, frameHeight > 0 else { return nil }
@@ -198,9 +180,7 @@ public enum FaceGeometrySolver
         let weightedSources = zip(source, sqrtWeights).map { $0 * $1 }
         let weightedTargets = zip(target, sqrtWeights).map { $0 * $1 }
 
-        // Weighted centroid of the source point cloud: sum(source[i] *
-        // weight[i]) / sum(weight[i]), computed via the already-weighted
-        // arrays to mirror the source's own derivation.
+        // Weighted centroid of the source point cloud.
         var sourceCenterOfMass = simd_float3.zero
         for index in source.indices { sourceCenterOfMass += weightedSources[index] * sqrtWeights[index] }
         sourceCenterOfMass /= totalWeight
@@ -250,12 +230,10 @@ public enum FaceGeometrySolver
         return transform
     }
 
-    /// SVD-based optimal rotation for the design matrix: `design = U Σ Vᵀ`,
-    /// `rotation = U Vᵀ`, with a reflection correction (flip the smallest
-    /// singular vector's sign) so `det(rotation) = +1`. The SVD itself is
-    /// derived via Jacobi eigendecomposition of `designᵀ * design`
-    /// (symmetric positive semi-definite): its eigenvectors are `V`, and
-    /// `U`'s columns are `design * v_i / σ_i`.
+    /// SVD-based optimal rotation: `design = U Σ Vᵀ`, `rotation = U Vᵀ`,
+    /// with a reflection correction so `det(rotation) = +1`. The SVD is
+    /// derived via Jacobi eigendecomposition of `designᵀ * design`: its
+    /// eigenvectors are `V`, and `U`'s columns are `design * v_i / σ_i`.
     private static func computeOptimalRotation(_ design: simd_float3x3) -> simd_float3x3?
     {
         let designTransposeDesign = design.transpose * design
@@ -279,10 +257,7 @@ public enum FaceGeometrySolver
         }
 
         // Degenerate (near-zero) singular values: complete U into an
-        // orthonormal basis. In practice this only happens for pathological
-        // point configurations already filtered by the design-matrix-norm
-        // and compactness checks upstream, but this keeps the result a
-        // valid rotation regardless.
+        // orthonormal basis so the result is still a valid rotation.
         if degenerateIndices.count == 1
         {
             let index = degenerateIndices[0]
@@ -307,15 +282,10 @@ public enum FaceGeometrySolver
 
     // MARK: - Bundled canonical model loading
 
-    /// Loads Fabric/Models/Face/CanonicalFaceModel.json -- extracted (see
-    /// that file's own extraction script) from mediapipe's own
-    /// geometry_pipeline_metadata_landmarks.pbtxt `canonical_mesh`
-    /// (468 vertices x [X,Y,Z,U,V], centimeters; 898 triangles) and
-    /// `procrustes_landmark_basis` (33 non-zero weighted landmark IDs out
-    /// of 468) fields -- the actual runtime data mediapipe's own Face
-    /// Geometry pipeline uses, not a re-derivation from the friendlier but
-    /// differently-indexed canonical_face_model.obj (see this file's own
-    /// header comment).
+    /// Loads Models/Face/CanonicalFaceModel.json -- MediaPipe's own
+    /// canonical_mesh (468 vertices x [X,Y,Z,U,V], centimeters; 898
+    /// triangles) and procrustes_landmark_basis (33 weighted landmark IDs)
+    /// fields.
     private struct CanonicalModel: Decodable
     {
         let positions: [simd_float3]

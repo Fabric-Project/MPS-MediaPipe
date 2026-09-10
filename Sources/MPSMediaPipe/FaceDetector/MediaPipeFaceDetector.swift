@@ -5,29 +5,17 @@
 
 import Foundation
 
-/// BlazeFace detector — short_range or full_range — owns every geometry
-/// fact specific to these two pretrained models and the full decode
-/// pipeline that consumes them: anchor generation (cached per variant),
+/// BlazeFace detector (short_range/full_range). Owns anchor generation,
 /// SSD decode, weighted NMS, letterbox projection, and rotated-rect
-/// derivation. Both variants share num_keypoints/rotation-keypoints/
-/// target-angle/rect-scale — confirmed by there being exactly one
-/// face_detection_front_detection_to_roi.pbtxt in mediapipe's repo, used
-/// regardless of which detector variant feeds it — only detector geometry
-/// and the bundled model itself differ per variant.
+/// derivation for both variants.
 ///
-/// short_range config (128x128 input, 4-layer anchor grid, min_score 0.5)
-/// confirmed against mediapipe/modules/face_detection/
-/// face_detection_short_range.pbtxt; full_range config (192x192 input,
-/// single-layer stride-4 anchor grid, min_score 0.6, and a different --
-/// and differently structured, see MediaPipeMPSGraph's
-/// DEPTH_TO_SPACE case -- underlying model, face_detection_full_range_
-/// sparse.tflite) confirmed against face_detection_full_range.pbtxt.
+/// short_range: 128x128 input, 4-layer anchor grid, min_score 0.5.
+/// full_range: 192x192 input, single-layer stride-4 anchor grid,
+/// min_score 0.6, DEPTH_TO_SPACE model structure (see MediaPipeMPSGraph).
 ///
-/// `decodeDetections`' returned region/keypoints are MediaPipe's native
-/// top-left-origin normalized full-image space — callers in a
-/// bottom-left-origin coordinate system (e.g. Fabric's own port
-/// convention) flip on their own side, since that's a caller convention,
-/// not a fact about this model.
+/// `decodeDetections` returns MediaPipe's native top-left-origin
+/// normalized full-image space; callers in a bottom-left-origin
+/// convention flip on their own side.
 public enum MediaPipeFaceDetector
 {
     public enum Variant: String, CaseIterable
@@ -49,7 +37,6 @@ public enum MediaPipeFaceDetector
 
     public static let detectorPixelRange: (min: Float, max: Float) = (-1, 1)
 
-    // Shared across both detector variants (see this type's own header).
     private static let numKeypoints = 6
     private static let rotationKeypoints = (start: 0, end: 1) // left eye -> right eye
     private static let targetAngleRadians: Float = 0.0

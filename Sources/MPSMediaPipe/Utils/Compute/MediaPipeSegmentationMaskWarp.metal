@@ -1,6 +1,6 @@
 //
 //  MediaPipeSegmentationMaskWarp.metal
-//  Fabric
+//  MPSMediaPipe
 //
 
 #include <metal_stdlib>
@@ -8,27 +8,18 @@
 using namespace metal;
 
 // Inverse of MediaPipeCropPreprocess.metal's cropRotateAndNormalizeNHWC:
-// that kernel maps a crop-space destination pixel back to a full-image
-// source pixel via rotate(+rotationRadians) around centerPixels. Here the
-// roles are reversed -- destination is a full-image pixel, source is the
-// model's 256x256 crop-space mask -- so the same rotate-around-center math
-// runs backwards: rotate(-rotationRadians), and anything that lands outside
-// the crop's own unit square is zero (mirrors WarpAffineCalculator's
-// BORDER_ZERO in MediaPipe's own pose_landmarks_and_segmentation_inverse_
-// projection.pbtxt).
+// destination is a full-image pixel, source is the model's crop-space
+// mask, so the same rotate-around-center math runs backwards
+// (rotate(-rotationRadians)); anything outside the crop's unit square is
+// zero.
 struct MediaPipeSegmentationMaskWarpUniforms {
-    float2 centerPixels;             // (cx, cy), top-left-origin PRESENTATION PIXEL space
+    float2 centerPixels;             // (cx, cy), top-left-origin presentation pixel space
     float2 rectSizePixels;           // (width, height) in pixels -- same crop rect as the forward kernel
     float rotationRadians;           // MediaPipeSSDDetectorDecoder.computeRotation's own convention
-    uint2 maskSize;                  // source buffer dimensions (256x256)
+    uint2 maskSize;                  // source buffer dimensions
     uint2 outputSize;                // destination texture dimensions (full image)
-    uint applySigmoid;                // 1 if maskValues holds pre-activation logits (BlazePose's own
-                                      // segmentation head), 0 if the model's own graph already ends in
-                                      // its own sigmoid (MediaPipe Selfie Segmentation's last op is a
-                                      // real LOGISTIC, confirmed by inspecting its resolved op list --
-                                      // re-applying sigmoid here would double-activate, compressing
-                                      // every value toward 0.5 (visibly "grey", not the intended
-                                      // near-binary confidence field).
+    uint applySigmoid;                // 1 if maskValues holds pre-activation logits, 0 if the
+                                      // model's own graph already ends in sigmoid
 };
 
 kernel void warpSegmentationMaskInverseNHWC(
@@ -41,8 +32,7 @@ kernel void warpSegmentationMaskInverseNHWC(
         return;
     }
 
-    // Destination pixel center, top-left-origin presentation pixel space --
-    // outputSize is the full image, so position already lives in that space.
+    // Destination pixel center, top-left-origin presentation pixel space.
     const float2 destinationPixels = float2(position) + 0.5f;
     const float2 offsetFromCenter = destinationPixels - uniforms.centerPixels;
 
@@ -62,9 +52,8 @@ kernel void warpSegmentationMaskInverseNHWC(
         return;
     }
 
-    // [0,1] crop UV, top-left origin, matching the forward kernel's own
-    // output row/column layout (both walk the same H,W indexing the model
-    // was fed and returned mask logits in).
+    // [0,1] crop UV, top-left origin, matching the forward kernel's
+    // row/column layout.
     const float2 cropUV = cropLocal + 0.5f;
     const float2 maskPixels = cropUV * float2(uniforms.maskSize) - 0.5f;
 

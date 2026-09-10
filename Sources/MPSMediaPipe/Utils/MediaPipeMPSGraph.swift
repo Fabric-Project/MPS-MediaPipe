@@ -1,24 +1,11 @@
 // MediaPipeMPSGraph.swift
 //
 // From-scratch MPSGraph reimplementation of any MediaPipe "Blaze"-family
-// TFLite model, run directly on GPU — no CoreML. Shared by BlazePalm/
+// TFLite model, run directly on GPU -- no CoreML. Shared by BlazePalm/
 // BlazeHand (hand detector + landmark model) and BlazeFace/FaceMesh (face
-// detector + landmark model) — a single generic interpreter, not a
-// per-model port. Unlike RTMPoseMPSGraph/RTMDetMPSGraph (hand-identified
-// architectures, built from mmdetection/mmpose source), this walks a
-// generic, fully-resolved TFLite op graph exported by
-// Tools/ModelConversion/MediaPipeHands/dump_tflite_graph.py (itself reusing
-// Mediapipe-Hands-PyTorch-CoreML's own tflite_graph.TFLiteModule to resolve
-// padding/groups/NHWC-vs-NCHW layout once, offline) — lower-risk than
-// re-deriving each model's block structure by hand, since the op sequence
-// is already fully resolved and this interprets it directly rather than
-// pattern-matching it.
-//
-// Numerically validated against tflite_graph.TFLiteModule's own PyTorch
-// execution of the same op graph on identical random input, for all four
-// models: ~1e-4 absolute (BlazePalm), ~7.6e-5 (BlazeFace), ~4e-5
-// (BlazeHand landmark), ~3.8e-5 (FaceMesh) — all float32-precision noise,
-// not a structural mismatch.
+// detector + landmark model): a single generic interpreter that walks a
+// fully-resolved TFLite op graph (padding/groups/layout already resolved
+// offline) rather than a per-model port.
 
 import Foundation
 import Metal
@@ -40,10 +27,8 @@ public final class MediaPipeMPSGraph
     public let inputWidth: Int
     public let inputHeight: Int
 
-    /// Loads a graph exported by dump_tflite_graph.py: `<name>_weights.bin`
-    /// / `<name>_weights.json` (MediaPipeModelWeights' own format — reused as-is,
-    /// keyed by stringified TFLite tensor index rather than a dotted name)
-    /// and `<name>_ops.json` (the resolved op list).
+    /// Loads `<name>_weights.bin`/`<name>_weights.json` (MediaPipeModelWeights'
+    /// format) and `<name>_ops.json` (the resolved op list).
     public init(weightsBinaryURL: URL, weightsManifestURL: URL, opsJSONURL: URL, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue) throws
     {
         self.weights = try MediaPipeModelWeights(binaryURL: weightsBinaryURL, manifestURL: weightsManifestURL)
@@ -58,10 +43,9 @@ public final class MediaPipeMPSGraph
         let inputIds = (opsJSON["inputIds"] as! [Any]).map { ($0 as! NSNumber).intValue }
         let outputIds = (opsJSON["outputIds"] as! [Any]).map { ($0 as! NSNumber).intValue }
 
-        // Input arrives NHWC (MediaPipeCropPreprocessor's own output
-        // layout, matching TFLite's native format); TFLiteModule's own
-        // forward() immediately permutes to NCHW, so match that exactly —
-        // every op after this point operates in NCHW.
+        // Input arrives NHWC (MediaPipeCropPreprocessor's output layout);
+        // permute to NCHW immediately -- every op after this point
+        // operates in NCHW.
         let inputPlaceholder = self.graph.placeholder(
             shape: [1, NSNumber(value: inputHeight), NSNumber(value: inputWidth), 3],
             dataType: .float32,
@@ -106,7 +90,7 @@ public final class MediaPipeMPSGraph
     }
 
     /// `inputBuffer` is NHWC float32, matching MediaPipeCropPreprocessor's
-    /// output exactly — fed straight into the compiled executable, no CPU
+    /// output -- fed straight into the compiled executable, no CPU
     /// round-trip. Returns each output tensor's flattened values in the
     /// model's own output order.
     public func run(inputBuffer: MTLBuffer) -> [[Float]]
@@ -116,11 +100,11 @@ public final class MediaPipeMPSGraph
         return results.map { Self.floatArray(from: $0) }
     }
 
-    /// Async counterpart: encodes onto `commandBuffer` without waiting,
-    /// matching RTMPoseMPSGraph/RTMDetMPSGraph's submit() contract — drops
-    /// the call (returns false, never invokes `completion`) if an inference
-    /// is already in flight. `commandBuffer` must already contain the crop
-    /// preprocessor's encode so the GPU sees crop-then-inference in order.
+    /// Async counterpart: encodes onto `commandBuffer` without waiting;
+    /// drops the call (returns false, never invokes `completion`) if an
+    /// inference is already in flight. `commandBuffer` must already
+    /// contain the crop preprocessor's encode so the GPU sees
+    /// crop-then-inference in order.
     @discardableResult
     public func submit(inputBuffer: MTLBuffer, commandBuffer: MTLCommandBuffer, completion: @escaping (Result<[[Float]], any Error>) -> Void) -> Bool
     {
@@ -271,12 +255,9 @@ public final class MediaPipeMPSGraph
             return Self.activate(sum, op.string("activation"), graph: graph)
 
         case "MUL":
-            // Selfie Segmentation's own squeeze-and-excitation gate --
-            // both operands are runtime activations already in this
-            // interpreter's NCHW layout by the time they reach here
-            // ([N,C,H,W] times [N,C,1,1]), so plain broadcasting multiply
-            // is correct with no weight-style reshape (cf. PRELU's alpha
-            // above) needed.
+            // A squeeze-and-excitation gate: both operands are already
+            // NCHW activations by this point ([N,C,H,W] times [N,C,1,1]),
+            // so plain broadcasting multiply is correct.
             let product = graph.multiplication(input(0), input(1), name: nil)
             return Self.activate(product, op.string("activation"), graph: graph)
 
@@ -302,16 +283,10 @@ public final class MediaPipeMPSGraph
             return Self.activate(y, op.string("activation"), graph: graph)
 
         case "AVERAGE_POOL_2D":
-            // TFLite divides by the count of *valid* (non-padded) elements,
-            // not the full kernel area. Unlike CONV_2D/MAX_POOL_2D above,
-            // this can't reuse a plain zero-pad-then-pool step (that would
-            // divide by the full kernel area, wrong) -- MPSGraphPooling2D
-            // OpDescriptor's own explicit left/right/top/bottom padding
-            // fields directly express possibly-asymmetric SAME padding
-            // (whichever of pre_pad/conv_pad tflite_to_torch.py resolved),
-            // and includeZeroPadToAverage=false makes the divisor match
-            // TFLite exactly in both the symmetric and asymmetric case --
-            // no separate manual pad step needed at all.
+            // TFLite divides by the count of valid (non-padded) elements,
+            // not the full kernel area -- explicit asymmetric padding plus
+            // includeZeroPadToAverage=false matches this exactly, no
+            // separate pad step needed.
             let x = input(0)
             let (avgFilterH, avgFilterW) = op.intPair("filter")
             let (avgStrideY, avgStrideX) = op.intPair("stride")
@@ -400,14 +375,9 @@ public final class MediaPipeMPSGraph
 
         case "DEPTH_TO_SPACE":
             // TF's channel decomposition is (i*b+j)*C_out+c (block-position-
-            // major, output-channel-minor) -- NOT the c*b^2+i*b+j order
+            // major, channel-minor) -- not the c*b^2+i*b+j order
             // PixelShuffle-style approaches assume -- so this reshapes/
-            // transposes by hand rather than reaching for a shuffle
-            // primitive. Verified against a hand-derived reference (and the
-            // matching tflite_graph.py addition) on a synthetic tensor
-            // before trusting it here; used by BlazeFace's full_range
-            // detector for its upsample path (short_range/BlazePalm/
-            // BlazeHand landmark use RESIZE_BILINEAR instead).
+            // transposes by hand.
             let blockSize = op.int("block_size")
             let x = input(0)
             let shape = x.shape!.map(\.intValue)
@@ -426,19 +396,14 @@ public final class MediaPipeMPSGraph
             return graph.sigmoid(with: input(0), name: nil)
 
         case "RELU":
-            // Standalone (not fused into a conv/add's activation option) —
-            // BlazeFace's detector uses plain ReLU throughout instead of
-            // BlazePalm/BlazeHand's PReLU.
+            // Standalone (not fused into a conv/add's activation option).
             return graph.reLU(with: input(0), name: nil)
 
         case "CUSTOM_Convolution2DTransposeBias":
-            // MediaPipe's own TFLite-GPU custom op: transpose convolution +
-            // fused bias add. Weight tensor was transposed at export time
-            // (tflite_to_torch.py) from tflite's own [out, kh, kw, in] into
-            // [in, out, kh, kw] -- PyTorch conv_transpose2d's own layout,
-            // used there only because tflite_graph.py's reference needed
-            // it; MPSGraph's own weightsLayout below is declared to match
-            // that same stored layout directly, no further transpose here.
+            // MediaPipe's own TFLite-GPU custom op: transpose convolution
+            // + fused bias add. Weight tensor is stored as [in, out, kh,
+            // kw]; MPSGraph's weightsLayout below matches that directly,
+            // no further transpose needed.
             let x = input(0)
             let weightTensor = weights.constant(graph, named: String(op.inputs[1]))
             let weightShape = weights.shape(named: String(op.inputs[1])) // [in, out, kh, kw]
@@ -469,9 +434,7 @@ public final class MediaPipeMPSGraph
             return transposed
 
         case "HARD_SWISH":
-            // MobileNetV3's h-swish: x * relu6(x+3) / 6 -- Selfie
-            // Segmentation's own activation (never a fused conv/add
-            // activation in TFLite's own enum, always this standalone op).
+            // MobileNetV3's h-swish: x * relu6(x+3) / 6.
             let x = input(0)
             let shifted = graph.addition(x, graph.constant(3.0, dataType: .float32), name: nil)
             let clamped = Self.activate(shifted, "relu6", graph: graph)
