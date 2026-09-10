@@ -47,12 +47,56 @@ import simd
 /// points rather than substituting two of the 33 main landmarks.
 public enum MediaPipePoseLandmarkProjection
 {
+    /// Speed/accuracy tier for the bundled BlazePose landmark model —
+    /// switching tier never changes port shape, only accuracy/latency.
+    public enum ModelTier: String, CaseIterable
+    {
+        case lite = "Lite"
+        case full = "Full"
+        case heavy = "Heavy"
+
+        public var resourcePrefix: String
+        {
+            switch self
+            {
+            case .lite: return "MediaPipePoseLandmarkLite"
+            case .full: return "MediaPipePoseLandmarkFull"
+            case .heavy: return "MediaPipePoseLandmarkHeavy"
+            }
+        }
+
+        public static func from(_ rawValue: String?) -> ModelTier
+        {
+            rawValue.flatMap(ModelTier.init(rawValue:)) ?? .lite
+        }
+    }
+
     public static let landmarkSize: Float = 256
+    public static let heatmapSize = 64
+    public static let maskSize = 256
     static let normalizeZ: Float = 1.0
     static let minPosePresenceConfidence: Float = 0.5
     public static let decodedLandmarkCount = 39
     static let poseLandmarkCount = 33
     static let auxiliaryLandmarkCount = 2
+
+    /// mediapipe/modules/pose_landmark/pose_landmarks_to_roi.pbtxt's own
+    /// AlignmentPointsRectsCalculator + RectTransformationCalculator config
+    /// -- indices 0 and 1 *of the 2-point auxiliary_landmarks stream*
+    /// (this type's own Pose.auxiliaryLandmarks, decoded indices 33-34 of
+    /// the raw 39-point tensor), confirmed against the real pbtxt's own
+    /// stream wiring (pose_landmark_gpu.pbtxt binds this subgraph's
+    /// LANDMARKS input to auxiliary_landmarks, not the main pose_landmarks)
+    /// -- NOT indices 0/1 of the 33-point pose landmarks (nose/left-eye),
+    /// which an earlier version of the caller used by mistake and which
+    /// produces a tiny, wrong ROI. Also NOT the detector's own keypoint 0/1
+    /// (mid-hip / full-body size point) -- three different arrays, same
+    /// numeric indices by coincidence. Same target angle/scale as
+    /// MediaPipePoseDetector's own ROI derivation, confirmed independently
+    /// rather than assumed equal.
+    private static let trackingRotationKeypoints = (start: 0, end: 1)
+    private static let trackingTargetAngleRadians: Float = .pi / 2
+    private static let trackingRectScale: Float = 1.25
 
     public struct Pose
     {
@@ -113,5 +157,46 @@ public enum MediaPipePoseLandmarkProjection
         }
 
         return Pose(landmarks: landmarks, auxiliaryLandmarks: auxiliaryLandmarks)
+    }
+
+    /// Re-derives a tracking ROI from this frame's own (unsmoothed)
+    /// auxiliary landmarks, matching mediapipe's own PreviousLoopbackCalculator-
+    /// fed tracking path -- nil whenever there aren't at least 2 points to
+    /// derive a rotation from, so callers can send nil downstream rather
+    /// than propagate a stale region. `auxiliaryLandmarks` are bottom-left-
+    /// origin normalized (matching a caller's own decoded-landmark output
+    /// space, e.g. MediaPipePoseLandmarkNode's); this function flips
+    /// internally to top-left for alignmentPointsRect, then flips the
+    /// result back, so both `auxiliaryLandmarks` in and `region` out are
+    /// bottom-left-origin.
+    public static func trackedRegion(from auxiliaryLandmarks: [simd_float3], presentationSize: CGSize) -> (region: simd_float4, rotation: Float)?
+    {
+        guard auxiliaryLandmarks.count >= 2 else { return nil }
+
+        let imageWidth = Float(presentationSize.width)
+        let imageHeight = Float(presentationSize.height)
+
+        let projected = MediaPipeSSDRectTransform.ProjectedDetection(
+            xmin: 0, ymin: 0, width: 0, height: 0,
+            keypoints: [
+                (x: auxiliaryLandmarks[0].x, y: 1 - auxiliaryLandmarks[0].y),
+                (x: auxiliaryLandmarks[1].x, y: 1 - auxiliaryLandmarks[1].y),
+            ],
+            score: 1
+        )
+
+        let rect = MediaPipeSSDRectTransform.alignmentPointsRect(
+            from: projected, imageWidth: imageWidth, imageHeight: imageHeight,
+            rotationKeypoints: Self.trackingRotationKeypoints, targetAngleRadians: Self.trackingTargetAngleRadians,
+            rectScale: Self.trackingRectScale
+        )
+
+        let regionBottomLeft = simd_float4(
+            rect.cx - rect.width / 2,
+            1 - (rect.cy - rect.height / 2) - rect.height,
+            rect.width,
+            rect.height
+        )
+        return (region: regionBottomLeft, rotation: rect.rotation)
     }
 }

@@ -16,9 +16,29 @@ import simd
 /// output on a real image) to float32 precision.
 public enum MediaPipeHandLandmarkProjection
 {
-    static let landmarkSize: Float = 224
+    public static let landmarkSize: Float = 224
+    public static let resourcePrefix = "MediaPipeHandLandmarks"
     static let normalizeZ: Float = 0.4
     static let minHandPresenceConfidence: Float = 0.5
+
+    // MediaPipe's own 21-point HAND_CONNECTIONS ordering: 0=wrist,
+    // 1-4=thumb, 5-8=index, 9-12=middle, 13-16=ring, 17-20=little.
+    public static let thumbIndices = [1, 2, 3, 4]
+    public static let indexIndices = [5, 6, 7, 8]
+    public static let middleIndices = [9, 10, 11, 12]
+    public static let ringIndices = [13, 14, 15, 16]
+    public static let littleIndices = [17, 18, 19, 20]
+    public static let wristIndex = 0
+
+    /// hand_landmarks_to_rect_calculator.cc's own GetPartialLandmarks index
+    /// set -- wrist, thumb CMC/MCP/IP (not thumb tip), and each other
+    /// finger's MCP/PIP (not DIP/tip) -- deliberately excludes fingertips so
+    /// extended fingers don't blow out the tracked box. Order matters: it's
+    /// the order MediaPipeSSDRectTransform.handLandmarksRect expects.
+    private static let trackingPartialIndices = [0, 1, 2, 3, 5, 6, 9, 10, 13, 14, 17, 18]
+    private static let trackingTargetAngleRadians: Float = .pi / 2
+    private static let trackingRectScale: Float = 2.0
+    private static let trackingRectShiftY: Float = -0.1
 
     public struct Hand
     {
@@ -85,5 +105,37 @@ public enum MediaPipeHandLandmarkProjection
         }
 
         return Hand(landmarks: landmarks, worldLandmarks: worldLandmarks, handedness: label, handednessScore: handednessScore)
+    }
+
+    /// Re-derives a tracking ROI from this frame's own (unsmoothed)
+    /// landmarks, the same way MediaPipe's HandLandmarksToRectCalculator
+    /// does -- see MediaPipeSSDRectTransform.handLandmarksRect's own header
+    /// for the full algorithm. `landmarks` are bottom-left-origin
+    /// normalized (matching a caller's own decoded-landmark output space,
+    /// e.g. MediaPipeHandLandmarkNode's); this function flips internally to
+    /// top-left for handLandmarksRect, then flips the result back, so both
+    /// `landmarks` in and `region` out are bottom-left-origin.
+    public static func trackedRegion(from landmarks: [simd_float3], presentationSize: CGSize) -> (region: simd_float4, rotation: Float)?
+    {
+        guard landmarks.count > (Self.trackingPartialIndices.max() ?? -1) else { return nil }
+
+        let imageWidth = Float(presentationSize.width)
+        let imageHeight = Float(presentationSize.height)
+
+        let partialPoints = Self.trackingPartialIndices.map { (x: landmarks[$0].x, y: 1 - landmarks[$0].y) }
+
+        guard let rect = MediaPipeSSDRectTransform.handLandmarksRect(
+            points: partialPoints, imageWidth: imageWidth, imageHeight: imageHeight,
+            targetAngleRadians: Self.trackingTargetAngleRadians, rectScale: Self.trackingRectScale,
+            rectShiftY: Self.trackingRectShiftY
+        ) else { return nil }
+
+        let regionBottomLeft = simd_float4(
+            rect.cx - rect.width / 2,
+            1 - (rect.cy - rect.height / 2) - rect.height,
+            rect.width,
+            rect.height
+        )
+        return (region: regionBottomLeft, rotation: rect.rotation)
     }
 }

@@ -15,7 +15,7 @@ let package = Package(
             name: "MPSMediaPipe",
             path: "Sources/MPSMediaPipe",
             resources: [
-                .copy("Compute"),
+                .copy("Utils/Compute"),
                 .copy("Models"),
             ]
         ),

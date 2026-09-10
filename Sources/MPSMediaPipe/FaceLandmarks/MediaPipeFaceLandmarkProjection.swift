@@ -29,10 +29,23 @@ import simd
 /// equivalent at all for the base (non-attention) FaceMesh variant.
 public enum MediaPipeFaceLandmarkProjection
 {
-    static let landmarkSize: Float = 192
+    public static let landmarkSize: Float = 192
+    public static let resourcePrefix = "MediaPipeFaceLandmarks"
     static let normalizeZ: Float = 1.0
     public static let minFacePresenceConfidence: Float = 0.5
     static let landmarkCount = 468
+
+    /// mediapipe/modules/face_landmark/face_landmark_landmarks_to_roi.pbtxt's
+    /// own DetectionsToRectsCalculator + RectTransformationCalculator config
+    /// -- mesh indices 33 (left eye, inner corner) and 263 (right eye, outer
+    /// corner), target angle 0, scale 1.5x1.5, no shift. Box-based (like the
+    /// detector's own rect()), not alignment-point-based -- confirmed
+    /// directly against the real pbtxt, not assumed equal to the detector's
+    /// own config (which uses different rotation keypoints: raw detector
+    /// keypoints 0/1, the two eyes, not mesh indices 33/263).
+    private static let trackingRotationKeypoints = (start: 33, end: 263)
+    private static let trackingTargetAngleRadians: Float = 0.0
+    private static let trackingRectScale: Float = 1.5
 
     public struct Face
     {
@@ -76,5 +89,54 @@ public enum MediaPipeFaceLandmarkProjection
         }
 
         return Face(landmarks: landmarks)
+    }
+
+    /// Re-derives a tracking ROI from this frame's own (unsmoothed)
+    /// landmarks, the same way MediaPipe's face_landmark_landmarks_to_roi.pbtxt
+    /// does: a box enclosing all 468 landmarks (LandmarksToDetectionCalculator),
+    /// rotated using mesh indices 33/263 (DetectionsToRectsCalculator).
+    /// `landmarks` are bottom-left-origin normalized (matching this type's
+    /// own `project(...)` output once a caller has flipped it to that
+    /// convention, e.g. MediaPipeFaceLandmarkNode's own landmark space) --
+    /// this function flips internally to top-left for the rect math, then
+    /// flips the result back, so both `landmarks` in and `region` out are
+    /// bottom-left-origin.
+    public static func trackedRegion(from landmarks: [simd_float3], presentationSize: CGSize) -> (region: simd_float4, rotation: Float)?
+    {
+        guard landmarks.count > max(Self.trackingRotationKeypoints.start, Self.trackingRotationKeypoints.end) else { return nil }
+
+        let imageWidth = Float(presentationSize.width)
+        let imageHeight = Float(presentationSize.height)
+
+        let xs = landmarks.map(\.x)
+        let topLeftYs = landmarks.map { 1 - $0.y }
+        let xmin = xs.min()!, xmax = xs.max()!
+        let ymin = topLeftYs.min()!, ymax = topLeftYs.max()!
+
+        let startLandmark = landmarks[Self.trackingRotationKeypoints.start]
+        let endLandmark = landmarks[Self.trackingRotationKeypoints.end]
+
+        let projected = MediaPipeSSDRectTransform.ProjectedDetection(
+            xmin: xmin, ymin: ymin, width: xmax - xmin, height: ymax - ymin,
+            keypoints: [
+                (x: startLandmark.x, y: 1 - startLandmark.y),
+                (x: endLandmark.x, y: 1 - endLandmark.y),
+            ],
+            score: 1
+        )
+
+        let rect = MediaPipeSSDRectTransform.rect(
+            from: projected, imageWidth: imageWidth, imageHeight: imageHeight,
+            rotationKeypoints: (start: 0, end: 1), targetAngleRadians: Self.trackingTargetAngleRadians,
+            rectScale: Self.trackingRectScale
+        )
+
+        let regionBottomLeft = simd_float4(
+            rect.cx - rect.width / 2,
+            1 - (rect.cy - rect.height / 2) - rect.height,
+            rect.width,
+            rect.height
+        )
+        return (region: regionBottomLeft, rotation: rect.rotation)
     }
 }
