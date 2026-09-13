@@ -16,6 +16,10 @@ public enum MediaPipeHandDetector
     public static let detectSize = 192
     public static let resourcePrefix = "MediaPipeHandDetector"
 
+    // No detectorPixelRange override here, unlike MediaPipeFaceDetector/
+    // MediaPipePoseDetector -- this model expects MediaPipeCropPreprocessor's
+    // default [0,1] pixel range, intentionally, not an oversight.
+
     private static let numKeypoints = 7
     private static let rotationKeypoints = (start: 0, end: 2) // wrist -> middle finger MCP
     private static let targetAngleRadians: Float = 90.0 // raw radians, not degrees -- a MediaPipe proto quirk
@@ -27,20 +31,18 @@ public enum MediaPipeHandDetector
     public static func decodeDetections(
         rawBoxes: [Float], rawScores: [Float], maxDetections: Int,
         imageWidth: Float, imageHeight: Float
-    ) -> [(region: (cx: Float, cy: Float, width: Float, height: Float), rotation: Float, score: Float, keypoints: [(x: Float, y: Float)])]
+    ) -> [MediaPipeDetection]
     {
-        let decoded = MediaPipeSSDDetectorDecoder.decode(rawBoxes: rawBoxes, rawScores: rawScores, anchors: Self.anchors, numKeypoints: Self.numKeypoints, detectSize: Self.detectSize)
-        let merged = MediaPipeSSDDetectorDecoder.weightedNonMaximumSuppression(decoded)
-        let topDetections = merged.sorted { $0.score > $1.score }.prefix(maxDetections)
-
-        return topDetections.map { detection in
-            let projected = MediaPipeSSDRectTransform.project(detection, imageWidth: imageWidth, imageHeight: imageHeight)
-            let rect = MediaPipeSSDRectTransform.rect(
+        MediaPipeSSDDetectorDecoder.decodeAndProject(
+            rawBoxes: rawBoxes, rawScores: rawScores,
+            anchors: Self.anchors, numKeypoints: Self.numKeypoints, detectSize: Self.detectSize,
+            maxDetections: maxDetections, imageWidth: imageWidth, imageHeight: imageHeight
+        ) { projected in
+            MediaPipeSSDRectTransform.rect(
                 from: projected, imageWidth: imageWidth, imageHeight: imageHeight,
                 rotationKeypoints: Self.rotationKeypoints, targetAngleRadians: Self.targetAngleRadians,
                 rectScale: Self.rectScale, rectShiftY: Self.rectShiftY
             )
-            return (region: (cx: rect.cx, cy: rect.cy, width: rect.width, height: rect.height), rotation: rect.rotation, score: detection.score, keypoints: projected.keypoints)
         }
     }
 }

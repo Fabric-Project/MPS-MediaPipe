@@ -6,7 +6,7 @@
 
 import Foundation
 
-public struct MediaPipeMPSGraphError: Error, CustomStringConvertible
+public struct MediaPipeMPSGraphError: Error, CustomStringConvertible, LocalizedError
 {
     public let message: String
 
@@ -16,4 +16,5 @@ public struct MediaPipeMPSGraphError: Error, CustomStringConvertible
     }
 
     public var description: String { self.message }
+    public var errorDescription: String? { self.message }
 }

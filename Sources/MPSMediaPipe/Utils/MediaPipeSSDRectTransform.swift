@@ -32,6 +32,15 @@ public enum MediaPipeSSDRectTransform
         return (x * m0 + m3, y * m5 + m7)
     }
 
+    /// A malformed/short keypoints array (not a normal-operation case)
+    /// clamps to the nearest valid index -- or (0,0) if there are none at
+    /// all -- rather than trapping.
+    private static func clampedKeypoint(_ keypoints: [(x: Float, y: Float)], at index: Int) -> (x: Float, y: Float)
+    {
+        guard keypoints.isEmpty == false else { return (0, 0) }
+        return keypoints[min(max(index, 0), keypoints.count - 1)]
+    }
+
     public struct ProjectedDetection
     {
         public var xmin: Float
@@ -87,8 +96,10 @@ public enum MediaPipeSSDRectTransform
         let cx = detection.xmin + detection.width / 2
         let cy = detection.ymin + detection.height / 2
 
-        let startPoint = (x: detection.keypoints[rotationKeypoints.start].x * imageWidth, y: detection.keypoints[rotationKeypoints.start].y * imageHeight)
-        let endPoint = (x: detection.keypoints[rotationKeypoints.end].x * imageWidth, y: detection.keypoints[rotationKeypoints.end].y * imageHeight)
+        let startKeypoint = Self.clampedKeypoint(detection.keypoints, at: rotationKeypoints.start)
+        let endKeypoint = Self.clampedKeypoint(detection.keypoints, at: rotationKeypoints.end)
+        let startPoint = (x: startKeypoint.x * imageWidth, y: startKeypoint.y * imageHeight)
+        let endPoint = (x: endKeypoint.x * imageWidth, y: endKeypoint.y * imageHeight)
         let rotation = MediaPipeSSDDetectorDecoder.computeRotation(from: startPoint, to: endPoint, targetAngleRadians: targetAngleRadians)
 
         return Self.finalizeRect(
@@ -144,8 +155,10 @@ public enum MediaPipeSSDRectTransform
         rectScale: Float, rectShiftX: Float = 0, rectShiftY: Float = 0
     ) -> (cx: Float, cy: Float, width: Float, height: Float, rotation: Float)
     {
-        let centerPoint = (x: detection.keypoints[rotationKeypoints.start].x * imageWidth, y: detection.keypoints[rotationKeypoints.start].y * imageHeight)
-        let scalePoint = (x: detection.keypoints[rotationKeypoints.end].x * imageWidth, y: detection.keypoints[rotationKeypoints.end].y * imageHeight)
+        let startKeypoint = Self.clampedKeypoint(detection.keypoints, at: rotationKeypoints.start)
+        let endKeypoint = Self.clampedKeypoint(detection.keypoints, at: rotationKeypoints.end)
+        let centerPoint = (x: startKeypoint.x * imageWidth, y: startKeypoint.y * imageHeight)
+        let scalePoint = (x: endKeypoint.x * imageWidth, y: endKeypoint.y * imageHeight)
 
         let dx = scalePoint.x - centerPoint.x
         let dy = scalePoint.y - centerPoint.y

@@ -48,13 +48,18 @@ public enum MediaPipeHandLandmarkProjection
     }
 
     /// `landmarksRaw`/`worldLandmarksRaw` are the flat 63-float (21x3)
-    /// outputs, in the model's own output order. Returns nil when presence
-    /// is below threshold.
+    /// outputs, in the model's own output order -- either shorter than that
+    /// returns nil. `presence` is already sigmoid-activated by the model's
+    /// own graph (unlike MediaPipeFaceLandmarkProjection's `presenceRaw`,
+    /// which is a pre-sigmoid logit this type activates itself) -- compared
+    /// directly against the threshold with no activation applied here.
+    /// Returns nil when presence is below threshold.
     public static func project(
         landmarksRaw: [Float], worldLandmarksRaw: [Float], presence: Float, handednessRaw: Float,
         rect: (cx: Float, cy: Float, width: Float, height: Float, rotation: Float)
     ) -> Hand?
     {
+        guard landmarksRaw.count >= 21 * 3, worldLandmarksRaw.count >= 21 * 3 else { return nil }
         guard presence > minHandPresenceConfidence else { return nil }
 
         // Binary classification: label_items[0]=Right (score s),
@@ -71,17 +76,11 @@ public enum MediaPipeHandLandmarkProjection
         landmarks.reserveCapacity(21)
         for index in 0..<21
         {
-            let x = landmarksRaw[index * 3 + 0] / landmarkSize - 0.5
-            let y = landmarksRaw[index * 3 + 1] / landmarkSize - 0.5
-            let z = landmarksRaw[index * 3 + 2] / landmarkSize / normalizeZ
-
-            let rotatedX = cosA * x - sinA * y
-            let rotatedY = sinA * x + cosA * y
-
-            landmarks.append(simd_float3(
-                rotatedX * rect.width + rect.cx,
-                rotatedY * rect.height + rect.cy,
-                z * rect.width
+            landmarks.append(MediaPipeLandmarkProjectionMath.rotateAndProject(
+                x: landmarksRaw[index * 3 + 0], y: landmarksRaw[index * 3 + 1], z: landmarksRaw[index * 3 + 2],
+                landmarkSize: landmarkSize, normalizeZ: normalizeZ,
+                sinRotation: sinA, cosRotation: cosA,
+                rect: (cx: rect.cx, cy: rect.cy, width: rect.width, height: rect.height)
             ))
         }
 
@@ -117,12 +116,6 @@ public enum MediaPipeHandLandmarkProjection
             rectShiftY: Self.trackingRectShiftY
         ) else { return nil }
 
-        let regionBottomLeft = simd_float4(
-            rect.cx - rect.width / 2,
-            1 - (rect.cy - rect.height / 2) - rect.height,
-            rect.width,
-            rect.height
-        )
-        return (region: regionBottomLeft, rotation: rect.rotation)
+        return MediaPipeLandmarkProjectionMath.regionBottomLeft(from: rect)
     }
 }

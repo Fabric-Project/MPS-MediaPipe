@@ -36,14 +36,17 @@ public enum MediaPipeFaceLandmarkProjection
         public var landmarks: [simd_float3]
     }
 
-    /// `landmarksRaw` is the flat 1404-float (468x3) output, `presenceRaw`
-    /// the raw (pre-sigmoid) face-presence logit. Returns nil when presence
-    /// is below threshold.
+    /// `landmarksRaw` is the flat 1404-float (468x3) output -- shorter than
+    /// that returns nil. `presenceRaw` is the raw (pre-sigmoid) face-presence
+    /// logit; sigmoid is applied internally before thresholding. Returns nil
+    /// when presence is below threshold.
     public static func project(
         landmarksRaw: [Float], presenceRaw: Float,
         rect: (cx: Float, cy: Float, width: Float, height: Float, rotation: Float)
     ) -> Face?
     {
+        guard landmarksRaw.count >= landmarkCount * 3 else { return nil }
+
         let presence = Float(1.0 / (1.0 + exp(-Double(presenceRaw))))
         guard presence > minFacePresenceConfidence else { return nil }
 
@@ -54,17 +57,11 @@ public enum MediaPipeFaceLandmarkProjection
         landmarks.reserveCapacity(landmarkCount)
         for index in 0..<landmarkCount
         {
-            let x = landmarksRaw[index * 3 + 0] / landmarkSize - 0.5
-            let y = landmarksRaw[index * 3 + 1] / landmarkSize - 0.5
-            let z = landmarksRaw[index * 3 + 2] / landmarkSize / normalizeZ
-
-            let rotatedX = cosA * x - sinA * y
-            let rotatedY = sinA * x + cosA * y
-
-            landmarks.append(simd_float3(
-                rotatedX * rect.width + rect.cx,
-                rotatedY * rect.height + rect.cy,
-                z * rect.width
+            landmarks.append(MediaPipeLandmarkProjectionMath.rotateAndProject(
+                x: landmarksRaw[index * 3 + 0], y: landmarksRaw[index * 3 + 1], z: landmarksRaw[index * 3 + 2],
+                landmarkSize: landmarkSize, normalizeZ: normalizeZ,
+                sinRotation: sinA, cosRotation: cosA,
+                rect: (cx: rect.cx, cy: rect.cy, width: rect.width, height: rect.height)
             ))
         }
 
@@ -105,12 +102,6 @@ public enum MediaPipeFaceLandmarkProjection
             rectScale: Self.trackingRectScale
         )
 
-        let regionBottomLeft = simd_float4(
-            rect.cx - rect.width / 2,
-            1 - (rect.cy - rect.height / 2) - rect.height,
-            rect.width,
-            rect.height
-        )
-        return (region: regionBottomLeft, rotation: rect.rotation)
+        return MediaPipeLandmarkProjectionMath.regionBottomLeft(from: rect)
     }
 }

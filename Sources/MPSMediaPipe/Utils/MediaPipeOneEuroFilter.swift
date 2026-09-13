@@ -80,12 +80,22 @@ final class MediaPipeOneEuroFilter
 
     /// `valueScale` normalizes cutoff behavior against tracked-subject size
     /// (1/objectScale) -- pass 1 to disable. `timestampNanoseconds` must be
-    /// non-zero and increasing; a non-increasing timestamp passes through
-    /// unfiltered. `debugTag`, when non-nil, throttled-logs intermediate
-    /// values via MediaPipeSmoothingDiagnosticLogger.
+    /// non-zero and increasing to actually filter; a non-increasing
+    /// timestamp (a caller re-applying the same still-unchanged sample, or
+    /// a genuine clock anomaly) holds the last smoothed output rather than
+    /// re-deriving anything -- returning the raw `value` instead would
+    /// snap straight past the smoothing on every such call, since `value`
+    /// on a repeat call is whatever's cached upstream, not a fresh sample.
+    /// Falls back to `value` only before any sample has ever been applied
+    /// (`position` has no stored value yet to hold). `debugTag`, when
+    /// non-nil, throttled-logs intermediate values via
+    /// MediaPipeSmoothingDiagnosticLogger.
     func apply(timestampNanoseconds: Int64, value: Float, valueScale: Float = 1, debugTag: String? = nil) -> Float
     {
-        guard timestampNanoseconds > self.lastTimeNanoseconds else { return value }
+        guard timestampNanoseconds > self.lastTimeNanoseconds else
+        {
+            return self.position.hasLastRawValue ? self.position.storedValue : value
+        }
 
         if self.lastTimeNanoseconds != 0
         {
@@ -166,8 +176,12 @@ enum MediaPipeSmoothingDiagnosticLogger
 ///
 /// Use the 2D overload when only x/y matter downstream; use the 3D
 /// overload when z carries meaningful depth, so it gets the same
-/// smoothing treatment rather than leaking raw depth. A given instance is
-/// only ever used with one of the two overloads.
+/// smoothing treatment rather than leaking raw depth. Switching which
+/// overload is called on an existing instance resets its filter state
+/// automatically (see `activeDimensionality`), so the two streams never
+/// silently blend into each other -- but that reset also means treating
+/// one instance as two independent streams by alternating overloads
+/// defeats the smoothing itself. Use one instance per point stream.
 ///
 /// Not thread-safe.
 public final class MediaPipeLandmarksSmoothingFilter
@@ -191,6 +205,13 @@ public final class MediaPipeLandmarksSmoothingFilter
     private var xFilters: [MediaPipeOneEuroFilter] = []
     private var yFilters: [MediaPipeOneEuroFilter] = []
     private var zFilters: [MediaPipeOneEuroFilter] = []
+
+    /// Tracks which `smooth(points:...)` overload this instance was last
+    /// called with. Calling the other overload resets filter state first,
+    /// so per-index filter history never blends across two unrelated point
+    /// streams that happen to share one instance.
+    private enum Dimensionality { case two, three }
+    private var activeDimensionality: Dimensionality?
 
     public init(
         minCutoff: Float = MediaPipeLandmarksSmoothingFilter.mediaPipeDefaultMinCutoff,
@@ -223,6 +244,11 @@ public final class MediaPipeLandmarksSmoothingFilter
 
         guard objectScalePixels >= Self.minAllowedObjectScale else { return points }
 
+        if self.activeDimensionality != .two
+        {
+            self.reset()
+            self.activeDimensionality = .two
+        }
         if self.xFilters.count != points.count
         {
             self.xFilters = (0..<points.count).map { _ in MediaPipeOneEuroFilter(minCutoff: self.minCutoff, beta: self.beta, derivateCutoff: self.derivateCutoff) }
@@ -256,6 +282,11 @@ public final class MediaPipeLandmarksSmoothingFilter
 
         guard objectScalePixels >= Self.minAllowedObjectScale else { return points }
 
+        if self.activeDimensionality != .three
+        {
+            self.reset()
+            self.activeDimensionality = .three
+        }
         if self.xFilters.count != points.count
         {
             self.xFilters = (0..<points.count).map { _ in MediaPipeOneEuroFilter(minCutoff: self.minCutoff, beta: self.beta, derivateCutoff: self.derivateCutoff) }

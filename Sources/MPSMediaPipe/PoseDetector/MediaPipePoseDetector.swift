@@ -31,20 +31,18 @@ public enum MediaPipePoseDetector
     public static func decodeDetections(
         rawBoxes: [Float], rawScores: [Float], maxDetections: Int,
         imageWidth: Float, imageHeight: Float
-    ) -> [(region: (cx: Float, cy: Float, width: Float, height: Float), rotation: Float, score: Float, keypoints: [(x: Float, y: Float)])]
+    ) -> [MediaPipeDetection]
     {
-        let decoded = MediaPipeSSDDetectorDecoder.decode(rawBoxes: rawBoxes, rawScores: rawScores, anchors: Self.anchors, numKeypoints: Self.numKeypoints, detectSize: Self.detectSize)
-        let merged = MediaPipeSSDDetectorDecoder.weightedNonMaximumSuppression(decoded)
-        let topDetections = merged.sorted { $0.score > $1.score }.prefix(maxDetections)
-
-        return topDetections.map { detection in
-            let projected = MediaPipeSSDRectTransform.project(detection, imageWidth: imageWidth, imageHeight: imageHeight)
-            let rect = MediaPipeSSDRectTransform.alignmentPointsRect(
+        MediaPipeSSDDetectorDecoder.decodeAndProject(
+            rawBoxes: rawBoxes, rawScores: rawScores,
+            anchors: Self.anchors, numKeypoints: Self.numKeypoints, detectSize: Self.detectSize,
+            maxDetections: maxDetections, imageWidth: imageWidth, imageHeight: imageHeight
+        ) { projected in
+            MediaPipeSSDRectTransform.alignmentPointsRect(
                 from: projected, imageWidth: imageWidth, imageHeight: imageHeight,
                 rotationKeypoints: Self.rotationKeypoints, targetAngleRadians: Self.targetAngleRadians,
                 rectScale: Self.rectScale
             )
-            return (region: (cx: rect.cx, cy: rect.cy, width: rect.width, height: rect.height), rotation: rect.rotation, score: detection.score, keypoints: projected.keypoints)
         }
     }
 }

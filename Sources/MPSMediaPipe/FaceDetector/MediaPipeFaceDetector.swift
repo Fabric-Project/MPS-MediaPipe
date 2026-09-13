@@ -42,36 +42,38 @@ public enum MediaPipeFaceDetector
     private static let targetAngleRadians: Float = 0.0
     private static let rectScale: Float = 1.5
 
-    private static let anchorsLock = NSLock()
-    private static var anchorsCache: [Variant: [(cx: Float, cy: Float, w: Float, h: Float)]] = [:]
+    // Both variants' anchor grids are fixed and cheap to keep around, so
+    // both are precomputed as plain `static let`s -- Swift's own lazy
+    // static initialization is already thread-safe, so this needs no lock
+    // (unlike the dictionary-cache-behind-an-NSLock this replaced).
+    private static let shortRangeAnchors = MediaPipeSSDAnchors.generate(detectSize: Variant.shortRange.detectSize, strides: Variant.shortRange.strides, interpolatedScaleAspectRatio: Variant.shortRange.interpolatedScaleAspectRatio)
+    private static let fullRangeAnchors = MediaPipeSSDAnchors.generate(detectSize: Variant.fullRange.detectSize, strides: Variant.fullRange.strides, interpolatedScaleAspectRatio: Variant.fullRange.interpolatedScaleAspectRatio)
 
     private static func anchors(for variant: Variant) -> [(cx: Float, cy: Float, w: Float, h: Float)]
     {
-        Self.anchorsLock.lock()
-        defer { Self.anchorsLock.unlock() }
-        if let existing = Self.anchorsCache[variant] { return existing }
-        let generated = MediaPipeSSDAnchors.generate(detectSize: variant.detectSize, strides: variant.strides, interpolatedScaleAspectRatio: variant.interpolatedScaleAspectRatio)
-        Self.anchorsCache[variant] = generated
-        return generated
+        switch variant
+        {
+        case .shortRange: return Self.shortRangeAnchors
+        case .fullRange: return Self.fullRangeAnchors
+        }
     }
 
     public static func decodeDetections(
         rawBoxes: [Float], rawScores: [Float], variant: Variant, maxDetections: Int,
         imageWidth: Float, imageHeight: Float
-    ) -> [(region: (cx: Float, cy: Float, width: Float, height: Float), rotation: Float, score: Float, keypoints: [(x: Float, y: Float)])]
+    ) -> [MediaPipeDetection]
     {
-        let decoded = MediaPipeSSDDetectorDecoder.decode(rawBoxes: rawBoxes, rawScores: rawScores, anchors: Self.anchors(for: variant), numKeypoints: Self.numKeypoints, detectSize: variant.detectSize, minScore: variant.minScoreThreshold)
-        let merged = MediaPipeSSDDetectorDecoder.weightedNonMaximumSuppression(decoded)
-        let topDetections = merged.sorted { $0.score > $1.score }.prefix(maxDetections)
-
-        return topDetections.map { detection in
-            let projected = MediaPipeSSDRectTransform.project(detection, imageWidth: imageWidth, imageHeight: imageHeight)
-            let rect = MediaPipeSSDRectTransform.rect(
+        MediaPipeSSDDetectorDecoder.decodeAndProject(
+            rawBoxes: rawBoxes, rawScores: rawScores,
+            anchors: Self.anchors(for: variant), numKeypoints: Self.numKeypoints, detectSize: variant.detectSize,
+            minScore: variant.minScoreThreshold,
+            maxDetections: maxDetections, imageWidth: imageWidth, imageHeight: imageHeight
+        ) { projected in
+            MediaPipeSSDRectTransform.rect(
                 from: projected, imageWidth: imageWidth, imageHeight: imageHeight,
                 rotationKeypoints: Self.rotationKeypoints, targetAngleRadians: Self.targetAngleRadians,
                 rectScale: Self.rectScale
             )
-            return (region: (cx: rect.cx, cy: rect.cy, width: rect.width, height: rect.height), rotation: rect.rotation, score: detection.score, keypoints: projected.keypoints)
         }
     }
 }

@@ -41,6 +41,8 @@ public enum MediaPipeSSDDetectorDecoder
         let coordsPerAnchor = 4 + numKeypoints * 2
         var detections: [Detection] = []
 
+        guard rawScores.count >= anchors.count, rawBoxes.count >= anchors.count * coordsPerAnchor else { return [] }
+
         for anchorIndex in 0..<anchors.count
         {
             let logit = min(max(rawScores[anchorIndex], -scoreClippingThreshold), scoreClippingThreshold)
@@ -98,9 +100,26 @@ public enum MediaPipeSSDDetectorDecoder
         while remaining.isEmpty == false
         {
             let top = remaining.removeFirst()
-            let overlaps = remaining.map { intersectionOverUnion($0, top) }
-            let candidates = [top] + zip(remaining, overlaps).filter { $0.1 > nmsThreshold }.map(\.0)
-            remaining = zip(remaining, overlaps).filter { $0.1 <= nmsThreshold }.map(\.0)
+
+            // Single pass instead of computing an `overlaps` array and then
+            // filtering it twice (once for candidates, once for the next
+            // `remaining`) -- same order-preserving partition, fewer
+            // intermediate array allocations.
+            var candidates: [Detection] = [top]
+            var nextRemaining: [Detection] = []
+            nextRemaining.reserveCapacity(remaining.count)
+            for candidate in remaining
+            {
+                if intersectionOverUnion(candidate, top) > nmsThreshold
+                {
+                    candidates.append(candidate)
+                }
+                else
+                {
+                    nextRemaining.append(candidate)
+                }
+            }
+            remaining = nextRemaining
 
             var result = top
             if candidates.isEmpty == false

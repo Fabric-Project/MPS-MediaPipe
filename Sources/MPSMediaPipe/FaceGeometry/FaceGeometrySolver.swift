@@ -96,6 +96,35 @@ public enum FaceGeometrySolver
         return (normalizedLandmarks, poseTransform)
     }
 
+    /// Fits the canonical face model to an already-reconstructed 3D point
+    /// cloud, via the same weighted-landmark Procrustes basis `solve()`
+    /// uses internally -- for callers with their own real-3D landmark
+    /// reconstruction (already placed correctly relative to whichever
+    /// camera is actually rendering them) who want the same canonical-
+    /// model fit and expression-normalization `solve()` provides, without
+    /// going through `solve()`'s own near-plane unprojectXY. That
+    /// unprojection divides by `nearPlane` (1cm) -- a small reference
+    /// distance that amplifies real-world per-point z inaccuracy far more
+    /// than a caller's own, already-correct reconstruction typically would;
+    /// for landmark data whose z accuracy doesn't support that amplification
+    /// well, fitting a reconstruction from a gentler unprojection (e.g. one
+    /// referenced against actual camera geometry, not an arbitrary 1cm
+    /// plane) can produce a visibly more faithful, better-conditioned fit.
+    /// `target` must be in the same order as `canonicalPositions`.
+    public static func fitCanonicalModel(to target: [simd_float3]) -> (metricLandmarks: [simd_float3], poseTransform: simd_float4x4)?
+    {
+        guard target.count == landmarkCount else { return nil }
+        guard let poseTransform = solveWeightedOrthogonalProblem(source: canonicalPositions, target: target, weights: procrustesWeights) else { return nil }
+
+        let inversePoseTransform = poseTransform.inverse
+        let normalizedLandmarks = target.map { point -> simd_float3 in
+            let homogeneous = inversePoseTransform * simd_float4(point, 1)
+            return simd_float3(homogeneous.x, homogeneous.y, homogeneous.z)
+        }
+
+        return (normalizedLandmarks, poseTransform)
+    }
+
     // MARK: - Screen <-> metric space conversion (geometry_pipeline.cc)
 
     private static func makeFrustum(frameWidth: Float, frameHeight: Float) -> Frustum
@@ -298,9 +327,27 @@ public enum FaceGeometrySolver
         init(from decoder: any Decoder) throws
         {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.positions = try container.decode([[Float]].self, forKey: .positions).map { simd_float3($0[0], $0[1], $0[2]) }
-            self.uvs = try container.decode([[Float]].self, forKey: .uvs).map { simd_float2($0[0], $0[1]) }
-            self.triangles = try container.decode([[UInt32]].self, forKey: .triangles).map { ($0[0], $0[1], $0[2]) }
+            self.positions = try container.decode([[Float]].self, forKey: .positions).map {
+                guard $0.count >= 3 else
+                {
+                    throw DecodingError.dataCorruptedError(forKey: .positions, in: container, debugDescription: "Expected 3 components per position row, got \($0.count)")
+                }
+                return simd_float3($0[0], $0[1], $0[2])
+            }
+            self.uvs = try container.decode([[Float]].self, forKey: .uvs).map {
+                guard $0.count >= 2 else
+                {
+                    throw DecodingError.dataCorruptedError(forKey: .uvs, in: container, debugDescription: "Expected 2 components per uv row, got \($0.count)")
+                }
+                return simd_float2($0[0], $0[1])
+            }
+            self.triangles = try container.decode([[UInt32]].self, forKey: .triangles).map {
+                guard $0.count >= 3 else
+                {
+                    throw DecodingError.dataCorruptedError(forKey: .triangles, in: container, debugDescription: "Expected 3 indices per triangle row, got \($0.count)")
+                }
+                return ($0[0], $0[1], $0[2])
+            }
             self.procrustesWeights = try container.decode([Float].self, forKey: .procrustesWeights)
         }
 

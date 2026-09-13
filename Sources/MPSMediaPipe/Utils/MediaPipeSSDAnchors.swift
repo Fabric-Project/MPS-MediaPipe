@@ -22,6 +22,8 @@ public enum MediaPipeSSDAnchors
     /// before reusing this for a new model.
     public static func generate(detectSize: Int, strides: [Int] = [8, 16, 16, 16], interpolatedScaleAspectRatio: Float = 1.0) -> [(cx: Float, cy: Float, w: Float, h: Float)]
     {
+        guard strides.allSatisfy({ $0 > 0 }) else { return [] }
+
         let numLayers = strides.count
         let anchorsPerLayerGroupEntry = interpolatedScaleAspectRatio > 0 ? 2 : 1 // aspect_ratio 1.0 anchor, plus an interpolated anchor (same center) only when interpolatedScaleAspectRatio > 0
         var anchors: [(cx: Float, cy: Float, w: Float, h: Float)] = []
