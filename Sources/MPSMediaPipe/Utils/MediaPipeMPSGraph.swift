@@ -159,11 +159,18 @@ public final class MediaPipeMPSGraph
     /// `inputBuffer` is NHWC float32, matching MediaPipeCropPreprocessor's
     /// output -- fed straight into the compiled executable, no CPU
     /// round-trip. Returns each output tensor's flattened values in the
-    /// model's own output order. Blocks for a free slot if
-    /// `maxFramesInFlight` calls are already in flight (this call is
-    /// already synchronous, so blocking briefly here costs nothing extra).
-    public func run(inputBuffer: MTLBuffer) -> [[Float]]
+    /// model's own output order. Throws if `inputBuffer` is too small for
+    /// this graph's input tensor -- a genuinely invalid call, not transient
+    /// state. Blocks for a free slot if `maxFramesInFlight` calls are
+    /// already in flight (this call is already synchronous, so blocking
+    /// briefly here costs nothing extra).
+    public func run(inputBuffer: MTLBuffer) throws -> [[Float]]
     {
+        guard inputBuffer.length >= self.inputBufferLength else
+        {
+            throw MediaPipeMPSGraphError("Input buffer has \(inputBuffer.length) bytes; this graph requires \(self.inputBufferLength).")
+        }
+
         let slot = self.acquireSlotBlocking()
         defer { self.releaseSlot(slot) }
 
@@ -172,19 +179,32 @@ public final class MediaPipeMPSGraph
         return results.enumerated().map { index, tensorData in self.floatArray(from: tensorData, slot: slot, cacheIndex: index) }
     }
 
-    /// Async counterpart: encodes onto `commandBuffer` without waiting;
-    /// drops the call (returns false, never invokes `completion`) if all
-    /// `maxFramesInFlight` slots are already in flight, rather than
-    /// blocking the caller. `commandBuffer` must already contain the crop
-    /// preprocessor's encode so the GPU sees crop-then-inference in order.
+    /// Async counterpart: encodes onto `commandBuffer` without waiting.
+    /// Throws for a genuinely invalid call (wrong-sized buffer, mismatched
+    /// device) -- those are programmer errors, not transient state, so they
+    /// surface immediately rather than looking identical to ordinary
+    /// backpressure. Returns `false` (doesn't throw, never invokes
+    /// `completion`) only when every `maxFramesInFlight` slot is already
+    /// occupied, since that's expected, recoverable pressure a caller
+    /// should just retry next frame. `commandBuffer` must already contain
+    /// the crop preprocessor's encode so the GPU sees crop-then-inference
+    /// in order.
     ///
     /// Never commits `commandBuffer` -- same reasoning as `encode(...)`:
     /// that decision belongs to whoever created the buffer. The caller must
     /// commit it (immediately, for a dedicated buffer) after this call
     /// returns `true`, or `completion` never fires.
     @discardableResult
-    public func submit(inputBuffer: MTLBuffer, commandBuffer: MTLCommandBuffer, completion: @escaping (Result<[[Float]], any Error>) -> Void) -> Bool
+    public func submit(inputBuffer: MTLBuffer, commandBuffer: MTLCommandBuffer, completion: @escaping (Result<[[Float]], any Error>) -> Void) throws -> Bool
     {
+        guard inputBuffer.length >= self.inputBufferLength else
+        {
+            throw MediaPipeMPSGraphError("Input buffer has \(inputBuffer.length) bytes; this graph requires \(self.inputBufferLength).")
+        }
+        guard commandBuffer.device === self.commandQueue.device else
+        {
+            throw MediaPipeMPSGraphError("The command buffer and this graph's model use different Metal devices.")
+        }
         guard let slot = self.acquireSlotNonBlocking() else { return false }
 
         let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputTensor.shape!, dataType: .float32)
@@ -236,6 +256,22 @@ public final class MediaPipeMPSGraph
         guard outputBuffers.count == self.outputTensors.count else
         {
             throw MediaPipeMPSGraphError("encode requires \(self.outputTensors.count) output buffers (one per output tensor), got \(outputBuffers.count)")
+        }
+        guard inputBuffer.length >= self.inputBufferLength else
+        {
+            throw MediaPipeMPSGraphError("Input buffer has \(inputBuffer.length) bytes; this graph requires \(self.inputBufferLength).")
+        }
+        guard commandBuffer.device === self.commandQueue.device else
+        {
+            throw MediaPipeMPSGraphError("The command buffer and this graph's model use different Metal devices.")
+        }
+        let requiredOutputLengths = self.outputBufferLengths
+        for (index, buffer) in outputBuffers.enumerated()
+        {
+            guard buffer.length >= requiredOutputLengths[index] else
+            {
+                throw MediaPipeMPSGraphError("Output buffer \(index) has \(buffer.length) bytes; this graph requires \(requiredOutputLengths[index]).")
+            }
         }
         guard let slot = self.acquireSlotNonBlocking() else { return false }
 
