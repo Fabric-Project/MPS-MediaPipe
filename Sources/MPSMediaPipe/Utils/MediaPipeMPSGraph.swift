@@ -48,6 +48,18 @@ public final class MediaPipeMPSGraph
     public let inputWidth: Int
     public let inputHeight: Int
 
+    /// Byte length `encode()`'s `inputBuffer` must be at least.
+    public var inputBufferLength: Int { self.inputWidth * self.inputHeight * 3 * MemoryLayout<Float>.stride }
+
+    /// Byte length required for each of `encode()`'s `outputBuffers`, in the
+    /// same order as `outputTensors` / `run()`'s returned arrays.
+    public var outputBufferLengths: [Int]
+    {
+        self.outputTensors.map { tensor in
+            tensor.shape!.map(\.intValue).reduce(1, *) * MemoryLayout<Float>.stride
+        }
+    }
+
     /// Loads `<name>_weights.bin`/`<name>_weights.json` (MediaPipeModelWeights'
     /// format) and `<name>_ops.json` (the resolved op list). Up to
     /// `maxFramesInFlight` overlapping `run()`/`submit()` calls may be in
@@ -165,6 +177,11 @@ public final class MediaPipeMPSGraph
     /// `maxFramesInFlight` slots are already in flight, rather than
     /// blocking the caller. `commandBuffer` must already contain the crop
     /// preprocessor's encode so the GPU sees crop-then-inference in order.
+    ///
+    /// Never commits `commandBuffer` -- same reasoning as `encode(...)`:
+    /// that decision belongs to whoever created the buffer. The caller must
+    /// commit it (immediately, for a dedicated buffer) after this call
+    /// returns `true`, or `completion` never fires.
     @discardableResult
     public func submit(inputBuffer: MTLBuffer, commandBuffer: MTLCommandBuffer, completion: @escaping (Result<[[Float]], any Error>) -> Void) -> Bool
     {
@@ -189,7 +206,54 @@ public final class MediaPipeMPSGraph
 
         let mpsCommandBuffer = MPSCommandBuffer(commandBuffer: commandBuffer)
         _ = self.executable.encode(to: mpsCommandBuffer, inputs: [inputData], results: nil, executionDescriptor: executionDescriptor)
-        mpsCommandBuffer.commit()
+        return true
+    }
+
+    /// GPU-resident counterpart to `run()`/`submit()`: writes each output
+    /// tensor directly into the matching buffer in `outputBuffers` (same
+    /// order as `outputTensors` -- see `outputBufferLengths`), no CPU
+    /// float-array readback at all.
+    ///
+    /// Never commits `commandBuffer` -- that decision belongs entirely to
+    /// whoever created the buffer, not to this method. `MPSGraphExecutable
+    /// .encode(to:)` doesn't commit anything on its own either, so the
+    /// buffer just holds this graph's encoded work, in order alongside
+    /// whatever else the caller encodes onto it, until its owner commits it
+    /// -- exactly like a plain render/compute pass. Pass a dedicated buffer
+    /// and commit it yourself immediately for ZipDepth-style same-frame,
+    /// no-wait consumption; pass Fabric's shared per-frame buffer and don't
+    /// commit it at all, letting its actual owner do that at the end of the
+    /// frame.
+    ///
+    /// Drops the call (returns false) instead of blocking if all
+    /// `maxFramesInFlight` slots are already in flight, matching `submit()`.
+    /// The slot is released once `commandBuffer` completes -- however far in
+    /// the future that turns out to be, so `maxFramesInFlight` effectively
+    /// shrinks the more other same-buffer work delays that commit.
+    @discardableResult
+    public func encode(inputBuffer: MTLBuffer, outputBuffers: [MTLBuffer], commandBuffer: MTLCommandBuffer) throws -> Bool
+    {
+        guard outputBuffers.count == self.outputTensors.count else
+        {
+            throw MediaPipeMPSGraphError("encode requires \(self.outputTensors.count) output buffers (one per output tensor), got \(outputBuffers.count)")
+        }
+        guard let slot = self.acquireSlotNonBlocking() else { return false }
+
+        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputTensor.shape!, dataType: .float32)
+        let outputData = zip(outputBuffers, self.outputTensors).map { buffer, tensor in
+            MPSGraphTensorData(buffer, shape: tensor.shape ?? [], dataType: .float32)
+        }
+
+        let executionDescriptor = MPSGraphExecutableExecutionDescriptor()
+        executionDescriptor.waitUntilCompleted = false
+
+        // Must be registered before commandBuffer is committed, whenever
+        // that ends up happening -- Metal requires completion handlers to
+        // be added before commit.
+        commandBuffer.addCompletedHandler { [weak self] _ in self?.releaseSlot(slot) }
+
+        let mpsCommandBuffer = MPSCommandBuffer(commandBuffer: commandBuffer)
+        _ = self.executable.encode(to: mpsCommandBuffer, inputs: [inputData], results: outputData, executionDescriptor: executionDescriptor)
         return true
     }
 
