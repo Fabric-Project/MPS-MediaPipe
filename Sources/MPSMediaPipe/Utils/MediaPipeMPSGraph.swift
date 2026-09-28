@@ -22,6 +22,11 @@ public final class MediaPipeMPSGraph
     private let outputTensors: [MPSGraphTensor]
     private let executable: MPSGraphExecutable
 
+    /// Static shapes resolved once at init, so the per-frame paths never
+    /// unwrap `MPSGraphTensor.shape`.
+    private let inputShape: [NSNumber]
+    private let outputShapes: [[NSNumber]]
+
     private let maxFramesInFlight: Int
     private let slotSemaphore: DispatchSemaphore
     private let slotLock = NSLock()
@@ -55,8 +60,8 @@ public final class MediaPipeMPSGraph
     /// same order as `outputTensors` / `run()`'s returned arrays.
     public var outputBufferLengths: [Int]
     {
-        self.outputTensors.map { tensor in
-            tensor.shape!.map(\.intValue).reduce(1, *) * MemoryLayout<Float>.stride
+        self.outputShapes.map { shape in
+            shape.map(\.intValue).reduce(1, *) * MemoryLayout<Float>.stride
         }
     }
 
@@ -103,12 +108,14 @@ public final class MediaPipeMPSGraph
         // Input arrives NHWC (MediaPipeCropPreprocessor's output layout);
         // permute to NCHW immediately -- every op after this point
         // operates in NCHW.
+        let inputShape: [NSNumber] = [1, NSNumber(value: inputHeight), NSNumber(value: inputWidth), 3]
         let inputPlaceholder = self.graph.placeholder(
-            shape: [1, NSNumber(value: inputHeight), NSNumber(value: inputWidth), 3],
+            shape: inputShape,
             dataType: .float32,
             name: "input"
         )
         self.inputTensor = inputPlaceholder
+        self.inputShape = inputShape
 
         var env: [Int: MPSGraphTensor] = [:]
         env[firstInputId] = self.graph.transpose(inputPlaceholder, permutation: [0, 3, 1, 2], name: nil)
@@ -131,8 +138,15 @@ public final class MediaPipeMPSGraph
             }
             return tensor
         }
+        self.outputShapes = try self.outputTensors.map { tensor in
+            guard let shape = tensor.shape else
+            {
+                throw MediaPipeMPSGraphError("MediaPipeMPSGraph: an output tensor has no static shape")
+            }
+            return shape
+        }
 
-        let inputType = MPSGraphShapedType(shape: inputPlaceholder.shape!, dataType: .float32)
+        let inputType = MPSGraphShapedType(shape: inputShape, dataType: .float32)
         let compilationDescriptor = Self.performanceCompilationDescriptor()
         self.executable = self.graph.compile(
             with: self.device,
@@ -174,7 +188,7 @@ public final class MediaPipeMPSGraph
         let slot = self.acquireSlotBlocking()
         defer { self.releaseSlot(slot) }
 
-        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputTensor.shape!, dataType: .float32)
+        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputShape, dataType: .float32)
         let results = self.executable.run(with: self.commandQueue, inputs: [inputData], results: nil, executionDescriptor: nil)
         return results.enumerated().map { index, tensorData in self.floatArray(from: tensorData, slot: slot, cacheIndex: index) }
     }
@@ -219,7 +233,7 @@ public final class MediaPipeMPSGraph
         }
         guard let slot = self.acquireSlotNonBlocking() else { return false }
 
-        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputTensor.shape!, dataType: .float32)
+        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputShape, dataType: .float32)
         let executionDescriptor = MPSGraphExecutableExecutionDescriptor()
         executionDescriptor.waitUntilCompleted = false
         executionDescriptor.completionHandler = { [weak self] results, error in
@@ -292,9 +306,9 @@ public final class MediaPipeMPSGraph
         }
         guard let slot = self.acquireSlotNonBlocking() else { return false }
 
-        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputTensor.shape!, dataType: .float32)
-        let outputData = zip(outputBuffers, self.outputTensors).map { buffer, tensor in
-            MPSGraphTensorData(buffer, shape: tensor.shape ?? [], dataType: .float32)
+        let inputData = MPSGraphTensorData(inputBuffer, shape: self.inputShape, dataType: .float32)
+        let outputData = zip(outputBuffers, self.outputShapes).map { buffer, shape in
+            MPSGraphTensorData(buffer, shape: shape, dataType: .float32)
         }
 
         let executionDescriptor = MPSGraphExecutableExecutionDescriptor()
@@ -361,7 +375,8 @@ public final class MediaPipeMPSGraph
             cache.buffers[cacheIndex] = [Float](repeating: 0, count: count)
         }
         cache.buffers[cacheIndex].withUnsafeMutableBufferPointer { buffer in
-            tensorData.mpsndarray().readBytes(buffer.baseAddress!, strideBytes: nil)
+            guard let baseAddress = buffer.baseAddress else { return }
+            tensorData.mpsndarray().readBytes(baseAddress, strideBytes: nil)
         }
         return cache.buffers[cacheIndex]
     }

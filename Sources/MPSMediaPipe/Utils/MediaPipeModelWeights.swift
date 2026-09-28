@@ -21,7 +21,7 @@ public final class MediaPipeModelWeights
 
     public init(binaryURL: URL, manifestURL: URL) throws
     {
-        self.data = try Data(contentsOf: binaryURL)
+        self.data = try Data(contentsOf: binaryURL, options: .mappedIfSafe)
         let manifestData = try Data(contentsOf: manifestURL)
         self.manifest = try JSONDecoder().decode([String: Entry].self, from: manifestData)
     }
@@ -30,26 +30,10 @@ public final class MediaPipeModelWeights
     /// row-major order the export tooling's own .numpy() call produced.
     public func floatArray(named name: String) throws -> [Float]
     {
-        guard let entry = manifest[name] else
-        {
-            throw MediaPipeMPSGraphError("MediaPipeModelWeights: missing tensor '\(name)'")
-        }
-
-        let elementCount = entry.shape.reduce(1, *)
-        let byteOffset = entry.offset * MemoryLayout<Float>.stride
-        let byteCount = elementCount * MemoryLayout<Float>.stride
-
-        guard byteOffset >= 0, byteCount >= 0, byteOffset + byteCount <= self.data.count else
-        {
-            throw MediaPipeMPSGraphError("MediaPipeModelWeights: tensor '\(name)' (offset \(byteOffset), \(byteCount) bytes) exceeds the loaded binary's \(self.data.count) bytes -- manifest/binary mismatch")
-        }
-
-        var values = [Float](repeating: 0, count: elementCount)
-        self.data.withUnsafeBytes { rawBuffer in
-            let source = rawBuffer.baseAddress!.advanced(by: byteOffset)
-            values.withUnsafeMutableBytes { destination in
-                destination.copyMemory(from: UnsafeRawBufferPointer(start: source, count: byteCount))
-            }
+        let byteRange = try self.byteRange(named: name)
+        var values = [Float](repeating: 0, count: byteRange.count / MemoryLayout<Float>.stride)
+        values.withUnsafeMutableBytes { destination in
+            destination.copyBytes(from: self.data[byteRange])
         }
         return values
     }
@@ -66,10 +50,32 @@ public final class MediaPipeModelWeights
     /// Builds an MPSGraph constant tensor from the named weight, in its
     /// native export-time shape (OIHW for conv weights, [out, in] for
     /// linear weights, etc.) -- callers transpose/reshape as needed per op.
+    /// Copies the tensor's bytes straight out of the memory-mapped file --
+    /// no intermediate `[Float]`.
     public func constant(_ graph: MPSGraph, named name: String) throws -> MPSGraphTensor
     {
-        let values = try self.floatArray(named: name)
         let shape = try self.shape(named: name).map { NSNumber(value: $0) }
-        return graph.constant(Data(bytes: values, count: values.count * MemoryLayout<Float>.stride), shape: shape, dataType: .float32)
+        return graph.constant(self.data.subdata(in: try self.byteRange(named: name)), shape: shape, dataType: .float32)
+    }
+
+    /// The named tensor's float32 byte range within the mapped binary.
+    private func byteRange(named name: String) throws -> Range<Data.Index>
+    {
+        guard let entry = manifest[name] else
+        {
+            throw MediaPipeMPSGraphError("MediaPipeModelWeights: missing tensor '\(name)'")
+        }
+
+        let elementCount = entry.shape.reduce(1, *)
+        let byteOffset = entry.offset * MemoryLayout<Float>.stride
+        let byteCount = elementCount * MemoryLayout<Float>.stride
+
+        guard byteOffset >= 0, byteCount >= 0, byteOffset + byteCount <= self.data.count else
+        {
+            throw MediaPipeMPSGraphError("MediaPipeModelWeights: tensor '\(name)' (offset \(byteOffset), \(byteCount) bytes) exceeds the loaded binary's \(self.data.count) bytes -- manifest/binary mismatch")
+        }
+
+        let start = self.data.startIndex + byteOffset
+        return start..<(start + byteCount)
     }
 }
