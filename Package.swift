@@ -22,7 +22,9 @@ let package = Package(
         .testTarget(
             name: "MPSMediaPipeTests",
             dependencies: ["MPSMediaPipe"],
-            path: "Tests/MPSMediaPipeTests"
+            path: "Tests/MPSMediaPipeTests",
+            // Read by path, not bundled: see MediaPipeModelRegressionTests.
+            exclude: ["Fixtures"]
         ),
     ],
     swiftLanguageModes: [.v5]

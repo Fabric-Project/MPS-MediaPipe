@@ -515,14 +515,11 @@ public final class MediaPipeMPSGraph
         switch op.type
         {
         case "CONV_2D", "DEPTHWISE_CONV_2D":
-            var x = try input(0)
-            if let (pl, pr, pt, pb) = try op.fourIntsOrNil("pre_pad")
-            {
-                x = graph.padTensor(x, with: .constant,
-                                     leftPadding: [0, 0, NSNumber(value: pt), NSNumber(value: pl)],
-                                     rightPadding: [0, 0, NSNumber(value: pb), NSNumber(value: pr)],
-                                     constantValue: 0, name: nil)
-            }
+            let x = try input(0)
+            // TFLite's asymmetric "SAME" pre-pad is zero padding, exactly what
+            // the convolution's own explicit padding does -- folded in here
+            // rather than run as a separate pad op.
+            let (prePadLeft, prePadRight, prePadTop, prePadBottom) = try op.fourIntsOrNil("pre_pad") ?? (0, 0, 0, 0)
             let weightTensor = try weights.constant(graph, named: String(op.inputId(1)))
             let (strideY, strideX) = try op.intPair("stride")
             let (dilationY, dilationX) = try op.intPair("dilation")
@@ -532,7 +529,8 @@ public final class MediaPipeMPSGraph
                 strideInX: strideX, strideInY: strideY,
                 dilationRateInX: dilationX, dilationRateInY: dilationY,
                 groups: groups,
-                paddingLeft: padX, paddingRight: padX, paddingTop: padY, paddingBottom: padY,
+                paddingLeft: padX + prePadLeft, paddingRight: padX + prePadRight,
+                paddingTop: padY + prePadTop, paddingBottom: padY + prePadBottom,
                 paddingStyle: .explicit, dataLayout: .NCHW, weightsLayout: .OIHW
             ) else
             {
@@ -551,10 +549,11 @@ public final class MediaPipeMPSGraph
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' alpha tensor has an empty shape")
             }
             let alphaReshaped = graph.reshape(alpha, shape: [1, NSNumber(value: alphaChannels), 1, 1], name: nil)
-            let positive = graph.reLU(with: x, name: nil)
-            let negative = graph.subtraction(x, positive, name: nil) // min(x, 0)
-            let scaledNegative = graph.multiplication(negative, alphaReshaped, name: nil)
-            return graph.addition(positive, scaledNegative, name: nil)
+            // x >= 0 ? x : alpha * x. Not leakyReLU: that computes
+            // max(x, alpha * x), which differs whenever alpha < 0 or alpha > 1,
+            // and these checkpoints' alphas span about -4.6 to 12.2.
+            let isNonNegative = graph.greaterThanOrEqualTo(x, graph.constant(0.0, dataType: .float32), name: nil)
+            return graph.select(predicate: isNonNegative, trueTensor: x, falseTensor: graph.multiplication(x, alphaReshaped, name: nil), name: nil)
 
         case "ADD":
             let sum = graph.addition(try input(0), try input(1), name: nil)
@@ -716,21 +715,15 @@ public final class MediaPipeMPSGraph
             {
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' expected a rank-4 input")
             }
-            let shape = xShape.map(\.intValue)
-            let (n, c, h, w) = (shape[0], shape[1], shape[2], shape[3])
+            let c = xShape[1].intValue
             guard c % (blockSize * blockSize) == 0 else
             {
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' channel count \(c) is not divisible by block_size^2 (\(blockSize * blockSize))")
             }
-            let cOut = c / (blockSize * blockSize)
-            let reshaped = graph.reshape(x, shape: [
-                NSNumber(value: n), NSNumber(value: blockSize), NSNumber(value: blockSize),
-                NSNumber(value: cOut), NSNumber(value: h), NSNumber(value: w),
-            ], name: nil)
-            let permuted = graph.transpose(reshaped, permutation: [0, 3, 4, 1, 5, 2], name: nil)
-            return graph.reshape(permuted, shape: [
-                NSNumber(value: n), NSNumber(value: cOut), NSNumber(value: h * blockSize), NSNumber(value: w * blockSize),
-            ], name: nil)
+            // TF's order interleaves the block position with the channels
+            // ((i*b + j) * C_out + c), which is MPSGraph's order when
+            // usePixelShuffleOrder is false -- one op, no rank-6 reshape.
+            return graph.depth(toSpace2DTensor: x, widthAxis: 3, heightAxis: 2, depthAxis: 1, blockSize: blockSize, usePixelShuffleOrder: false, name: nil)
 
         case "LOGISTIC":
             return graph.sigmoid(with: try input(0), name: nil)
@@ -797,7 +790,7 @@ public final class MediaPipeMPSGraph
         {
         case "none": return x
         case "relu": return graph.reLU(with: x, name: nil)
-        case "relu6": return graph.minimum(graph.maximum(x, graph.constant(0.0, dataType: .float32), name: nil), graph.constant(6.0, dataType: .float32), name: nil)
+        case "relu6": return graph.clamp(x, min: graph.constant(0.0, dataType: .float32), max: graph.constant(6.0, dataType: .float32), name: nil)
         case "tanh": return graph.tanh(with: x, name: nil)
         default: throw MediaPipeMPSGraphError("MediaPipeMPSGraph: unhandled activation '\(activation)'")
         }
