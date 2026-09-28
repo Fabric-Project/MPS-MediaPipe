@@ -69,7 +69,7 @@ public final class MediaPipeMPSGraph
     /// format) and `<name>_ops.json` (the resolved op list). Up to
     /// `maxFramesInFlight` overlapping `run()`/`submit()` calls may be in
     /// flight on one instance at once.
-    public init(weightsBinaryURL: URL, weightsManifestURL: URL, opsJSONURL: URL, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue, maxFramesInFlight: Int = 3) throws
+    public init(weightsBinaryURL: URL, weightsManifestURL: URL, opsJSONURL: URL, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue, maxFramesInFlight: Int = 3, precision: MediaPipePrecision = .float32) throws
     {
         let weights = try MediaPipeModelWeights(binaryURL: weightsBinaryURL, manifestURL: weightsManifestURL)
         self.device = MPSGraphDevice(mtlDevice: commandQueue.device)
@@ -118,12 +118,13 @@ public final class MediaPipeMPSGraph
         self.inputShape = inputShape
 
         var env: [Int: MPSGraphTensor] = [:]
-        env[firstInputId] = self.graph.transpose(inputPlaceholder, permutation: [0, 3, 1, 2], name: nil)
+        let nchwInput = self.graph.transpose(inputPlaceholder, permutation: [0, 3, 1, 2], name: nil)
+        env[firstInputId] = precision.activationDataType == .float32 ? nchwInput : self.graph.cast(nchwInput, to: precision.activationDataType, name: nil)
 
         for opDict in opsList
         {
             let op = try Op(opDict)
-            let result = try Self.build(op: op, graph: self.graph, weights: weights, env: env)
+            let result = try Self.build(op: op, graph: self.graph, weights: weights, env: env, precision: precision)
             guard let firstOutput = op.outputs.first else
             {
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' has no outputs")
@@ -131,12 +132,13 @@ public final class MediaPipeMPSGraph
             env[firstOutput] = result
         }
 
+        let graph = self.graph
         self.outputTensors = try outputIds.map { id in
             guard let tensor = env[id] else
             {
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: output tensor id \(id) was never produced by any op")
             }
-            return tensor
+            return tensor.dataType == .float32 ? tensor : graph.cast(tensor, to: .float32, name: nil)
         }
         self.outputShapes = try self.outputTensors.map { tensor in
             guard let shape = tensor.shape else
@@ -481,8 +483,28 @@ public final class MediaPipeMPSGraph
 
     // MARK: - Op building
 
-    private static func build(op: Op, graph: MPSGraph, weights: MediaPipeModelWeights, env: [Int: MPSGraphTensor]) throws -> MPSGraphTensor
+    private static func build(op: Op, graph: MPSGraph, weights: MediaPipeModelWeights, env: [Int: MPSGraphTensor], precision: MediaPipePrecision) throws -> MPSGraphTensor
     {
+        let layerType = precision.layerDataType
+        let activationType = precision.activationDataType
+
+        /// A weight in the given type; the cast of a constant folds at compile time.
+        func weight(_ id: Int, as dataType: MPSDataType) throws -> MPSGraphTensor
+        {
+            let constant = try weights.constant(graph, named: String(id))
+            return dataType == .float32 ? constant : graph.cast(constant, to: dataType, name: nil)
+        }
+
+        /// Into / out of a conv or fully connected layer's type (casts only in mixedFloat16).
+        func toLayerType(_ x: MPSGraphTensor) -> MPSGraphTensor
+        {
+            x.dataType == layerType ? x : graph.cast(x, to: layerType, name: nil)
+        }
+        func toActivationType(_ x: MPSGraphTensor) -> MPSGraphTensor
+        {
+            x.dataType == activationType ? x : graph.cast(x, to: activationType, name: nil)
+        }
+
         func input(_ index: Int) throws -> MPSGraphTensor
         {
             let id = try op.inputId(index)
@@ -507,7 +529,7 @@ public final class MediaPipeMPSGraph
             {
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' bias tensor has an empty shape")
             }
-            let bias = try weights.constant(graph, named: String(biasId))
+            let bias = try weight(biasId, as: layerType)
             let biasReshaped = graph.reshape(bias, shape: [1, NSNumber(value: outChannels), 1, 1], name: nil)
             return graph.addition(x, biasReshaped, name: nil)
         }
@@ -520,7 +542,7 @@ public final class MediaPipeMPSGraph
             // the convolution's own explicit padding does -- folded in here
             // rather than run as a separate pad op.
             let (prePadLeft, prePadRight, prePadTop, prePadBottom) = try op.fourIntsOrNil("pre_pad") ?? (0, 0, 0, 0)
-            let weightTensor = try weights.constant(graph, named: String(op.inputId(1)))
+            let weightTensor = try weight(op.inputId(1), as: layerType)
             let (strideY, strideX) = try op.intPair("stride")
             let (dilationY, dilationX) = try op.intPair("dilation")
             let (padY, padX) = try op.intPair("conv_pad")
@@ -536,13 +558,13 @@ public final class MediaPipeMPSGraph
             {
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' could not build a convolution descriptor")
             }
-            let y = graph.convolution2D(x, weights: weightTensor, descriptor: descriptor, name: nil)
-            return try Self.activate(try addBiasIfPresent(y), try op.string("activation"), graph: graph)
+            let y = graph.convolution2D(toLayerType(x), weights: weightTensor, descriptor: descriptor, name: nil)
+            return try Self.activate(toActivationType(try addBiasIfPresent(y)), try op.string("activation"), graph: graph)
 
         case "PRELU":
             let x = try input(0)
             let alphaId = try op.inputId(1)
-            let alpha = try weights.constant(graph, named: String(alphaId))
+            let alpha = try weight(alphaId, as: activationType)
             let alphaShape = try weights.shape(named: String(alphaId))
             guard let alphaChannels = alphaShape.first else
             {
@@ -552,7 +574,7 @@ public final class MediaPipeMPSGraph
             // x >= 0 ? x : alpha * x. Not leakyReLU: that computes
             // max(x, alpha * x), which differs whenever alpha < 0 or alpha > 1,
             // and these checkpoints' alphas span about -4.6 to 12.2.
-            let isNonNegative = graph.greaterThanOrEqualTo(x, graph.constant(0.0, dataType: .float32), name: nil)
+            let isNonNegative = graph.greaterThanOrEqualTo(x, graph.constant(0.0, dataType: x.dataType), name: nil)
             return graph.select(predicate: isNonNegative, trueTensor: x, falseTensor: graph.multiplication(x, alphaReshaped, name: nil), name: nil)
 
         case "ADD":
@@ -687,18 +709,18 @@ public final class MediaPipeMPSGraph
         case "FULLY_CONNECTED":
             let x = try input(0)
             let weightId = try op.inputId(1)
-            let weightTensor = try weights.constant(graph, named: String(weightId)) // [out, in]
+            let weightTensor = try weight(weightId, as: layerType) // [out, in]
             let weightTransposed = graph.transposeTensor(weightTensor, dimension: 0, withDimension: 1, name: nil)
-            var y = graph.matrixMultiplication(primary: x, secondary: weightTransposed, name: nil)
+            var y = graph.matrixMultiplication(primary: toLayerType(x), secondary: weightTransposed, name: nil)
             if op.inputs.count > 2
             {
                 // Bias here matches the matmul's own 2D [batch, out] output
                 // shape directly -- no [1,C,1,1] NCHW-broadcast reshape
                 // needed, unlike the convolution ops' bias-add.
-                let bias = try weights.constant(graph, named: String(op.inputId(2)))
+                let bias = try weight(op.inputId(2), as: layerType)
                 y = graph.addition(y, bias, name: nil)
             }
-            return try Self.activate(y, try op.string("activation"), graph: graph)
+            return try Self.activate(toActivationType(y), try op.string("activation"), graph: graph)
 
         case "DEPTH_TO_SPACE":
             // TF's channel decomposition is (i*b+j)*C_out+c (block-position-
@@ -739,7 +761,7 @@ public final class MediaPipeMPSGraph
             // no further transpose needed.
             let x = try input(0)
             let weightId = try op.inputId(1)
-            let weightTensor = try weights.constant(graph, named: String(weightId))
+            let weightTensor = try weight(weightId, as: layerType)
             let weightShape = try weights.shape(named: String(weightId)) // [in, out, kh, kw]
             guard weightShape.count > 1 else
             {
@@ -765,19 +787,23 @@ public final class MediaPipeMPSGraph
                 throw MediaPipeMPSGraphError("MediaPipeMPSGraph: op '\(op.type)' could not build a convolution descriptor")
             }
             let transposed = graph.convolutionTranspose2D(
-                x, weights: weightTensor,
+                toLayerType(x), weights: weightTensor,
                 outputShape: [NSNumber(value: inputShape[0]), NSNumber(value: outChannels), NSNumber(value: outputHeight), NSNumber(value: outputWidth)],
                 descriptor: transposeDescriptor, name: nil
             )
-            return try addBiasIfPresent(transposed)
+            return toActivationType(try addBiasIfPresent(transposed))
 
         case "HARD_SWISH":
             // MobileNetV3's h-swish: x * relu6(x+3) / 6.
             let x = try input(0)
-            let shifted = graph.addition(x, graph.constant(3.0, dataType: .float32), name: nil)
+            let shifted = graph.addition(x, graph.constant(3.0, dataType: x.dataType), name: nil)
             let clamped = try Self.activate(shifted, "relu6", graph: graph)
-            let divided = graph.division(clamped, graph.constant(6.0, dataType: .float32), name: nil)
-            return graph.multiplication(x, divided, name: nil)
+            // Multiply by 1/6 rather than divide: the Neural Engine compiler
+            // rejects this elementwise divide (observed: "Elementwise Div
+            // error", falling back to GPU) when MPSGraph places a float16
+            // graph on the ANE.
+            let scaled = graph.multiplication(clamped, graph.constant(1.0 / 6.0, dataType: x.dataType), name: nil)
+            return graph.multiplication(x, scaled, name: nil)
 
         default:
             throw MediaPipeMPSGraphError("MediaPipeMPSGraph: unhandled TFLite op type '\(op.type)'")
@@ -790,7 +816,7 @@ public final class MediaPipeMPSGraph
         {
         case "none": return x
         case "relu": return graph.reLU(with: x, name: nil)
-        case "relu6": return graph.clamp(x, min: graph.constant(0.0, dataType: .float32), max: graph.constant(6.0, dataType: .float32), name: nil)
+        case "relu6": return graph.clamp(x, min: graph.constant(0.0, dataType: x.dataType), max: graph.constant(6.0, dataType: x.dataType), name: nil)
         case "tanh": return graph.tanh(with: x, name: nil)
         default: throw MediaPipeMPSGraphError("MediaPipeMPSGraph: unhandled activation '\(activation)'")
         }

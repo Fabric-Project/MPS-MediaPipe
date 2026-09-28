@@ -13,7 +13,7 @@ public extension MediaPipeMPSGraph
     /// the `<name>_weights.bin` / `<name>_weights.json` / `<name>_ops.json`
     /// naming convention every bundled model uses (e.g. "MediaPipePoseDetector",
     /// "MediaPipeSelfieSegmentationLandscape").
-    static func loadBundled(named name: String, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue, maxFramesInFlight: Int = 3) throws -> MediaPipeMPSGraph
+    static func loadBundled(named name: String, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue, maxFramesInFlight: Int = 3, precision: MediaPipePrecision = .float32) throws -> MediaPipeMPSGraph
     {
         let binaryURL = Bundle.module.url(forResource: "\(name)_weights", withExtension: "bin", subdirectory: "Models/Pose")
         let manifestURL = Bundle.module.url(forResource: "\(name)_weights", withExtension: "json", subdirectory: "Models/Pose")
@@ -31,7 +31,8 @@ public extension MediaPipeMPSGraph
         return try MediaPipeMPSGraph(
             weightsBinaryURL: binaryURL, weightsManifestURL: manifestURL, opsJSONURL: opsURL,
             inputWidth: inputWidth, inputHeight: inputHeight, commandQueue: commandQueue,
-            maxFramesInFlight: maxFramesInFlight
+            maxFramesInFlight: maxFramesInFlight,
+            precision: precision
         )
     }
 }
