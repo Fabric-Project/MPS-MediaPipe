@@ -83,6 +83,11 @@ public final class MediaPipeSegmentationMaskProjector
     /// model's own graph already ends in a sigmoid -- re-applying it would
     /// double-activate and wash the mask toward uniform grey. Encodes onto
     /// `commandBuffer` without committing.
+    ///
+    /// This is the CPU-array entry point: the values are copied into a
+    /// per-slot scratch buffer first. When the mask is already in a GPU
+    /// buffer, use `encode(maskBuffer:...)` instead, which has no copy, no
+    /// scratch slot, and needs no readback to have produced the values.
     public func encode(
         maskValues: [Float],
         applySigmoid: Bool = true,
@@ -100,16 +105,81 @@ public final class MediaPipeSegmentationMaskProjector
 
         let slot = try self.acquireSlot()
 
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else
-        {
-            self.releaseSlot(slot)
-            throw MediaPipeMPSGraphError("Could not create MediaPipe segmentation mask warp compute pass")
-        }
-        commandBuffer.addCompletedHandler { [weak self] _ in self?.releaseSlot(slot) }
-
         let maskBuffer = self.maskBuffers[slot]
         maskValues.withUnsafeBytes { rawBuffer in
             maskBuffer.contents().copyMemory(from: rawBuffer.baseAddress!, byteCount: rawBuffer.count)
+        }
+
+        do
+        {
+            try self.encodeWarp(
+                maskBuffer: maskBuffer,
+                label: "[slot \(slot)]",
+                applySigmoid: applySigmoid,
+                centerNormalizedBottomLeft: centerNormalizedBottomLeft,
+                sizeNormalized: sizeNormalized,
+                rotationRadians: rotationRadians,
+                destinationTexture: destinationTexture,
+                commandBuffer: commandBuffer
+            )
+        }
+        catch
+        {
+            self.releaseSlot(slot)
+            throw error
+        }
+        commandBuffer.addCompletedHandler { [weak self] _ in self?.releaseSlot(slot) }
+    }
+
+    /// GPU-resident variant: `maskBuffer` is the model's mask tensor exactly
+    /// as `MediaPipeMPSGraph.encode` wrote it (`maskWidth * maskHeight`
+    /// float32, row-major top-left origin), read directly by the warp kernel.
+    /// Nothing is read back to the CPU, and there is no scratch slot to
+    /// exhaust, so this cannot fail for capacity. Same rect, sigmoid and
+    /// commit rules as the CPU-array overload. The buffer must be written
+    /// before this dispatch on the same command buffer (or by one committed
+    /// earlier on the same queue), which is the case when the model's
+    /// `encode` was called on `commandBuffer` first.
+    public func encode(
+        maskBuffer: MTLBuffer,
+        applySigmoid: Bool = true,
+        centerNormalizedBottomLeft: simd_float2,
+        sizeNormalized: simd_float2,
+        rotationRadians: Float,
+        destinationTexture: MTLTexture,
+        commandBuffer: MTLCommandBuffer
+    ) throws
+    {
+        guard maskBuffer.length >= self.maskWidth * self.maskHeight * MemoryLayout<Float>.stride else
+        {
+            throw MediaPipeMPSGraphError("MediaPipe segmentation mask buffer is too small")
+        }
+        try self.encodeWarp(
+            maskBuffer: maskBuffer,
+            label: "",
+            applySigmoid: applySigmoid,
+            centerNormalizedBottomLeft: centerNormalizedBottomLeft,
+            sizeNormalized: sizeNormalized,
+            rotationRadians: rotationRadians,
+            destinationTexture: destinationTexture,
+            commandBuffer: commandBuffer
+        )
+    }
+
+    private func encodeWarp(
+        maskBuffer: MTLBuffer,
+        label: String,
+        applySigmoid: Bool,
+        centerNormalizedBottomLeft: simd_float2,
+        sizeNormalized: simd_float2,
+        rotationRadians: Float,
+        destinationTexture: MTLTexture,
+        commandBuffer: MTLCommandBuffer
+    ) throws
+    {
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else
+        {
+            throw MediaPipeMPSGraphError("Could not create MediaPipe segmentation mask warp compute pass")
         }
 
         let presentationSize = simd_float2(Float(destinationTexture.width), Float(destinationTexture.height))
@@ -123,7 +193,7 @@ public final class MediaPipeSegmentationMaskProjector
             applySigmoid: applySigmoid ? 1 : 0
         )
 
-        encoder.label = "MediaPipe segmentation mask inverse warp [slot \(slot)]"
+        encoder.label = "MediaPipe segmentation mask inverse warp \(label)"
         encoder.setComputePipelineState(self.pipeline)
         encoder.setBuffer(maskBuffer, offset: 0, index: 0)
         encoder.setBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)

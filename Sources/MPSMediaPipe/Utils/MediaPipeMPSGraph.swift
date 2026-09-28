@@ -190,12 +190,24 @@ public final class MediaPipeMPSGraph
     /// the crop preprocessor's encode so the GPU sees crop-then-inference
     /// in order.
     ///
-    /// Never commits `commandBuffer` -- same reasoning as `encode(...)`:
-    /// that decision belongs to whoever created the buffer. The caller must
-    /// commit it (immediately, for a dedicated buffer) after this call
-    /// returns `true`, or `completion` never fires.
+    /// Commits `commandBuffer` internally when `commit` is true -- never do
+    /// this yourself by calling `.commit()` on the raw buffer you passed in.
+    /// `MPSGraphExecutable.encode(to:)` (called inside this method) may
+    /// commit the buffer on its own via an internal `commitAndContinue`
+    /// (confirmed empirically: a caller-side explicit `.commit()` after
+    /// this call crashed with `-[_MTLCommandBuffer addCompletedHandler:]`
+    /// asserting inside Metal's own commit bookkeeping -- the signature of
+    /// committing an already-committed buffer). Only the `MPSCommandBuffer`
+    /// wrapper this method builds internally can tell whether that already
+    /// happened, so only it may issue the actual commit call. Pass
+    /// `commit: true` for a dedicated buffer you want committed as part of
+    /// this call (`completion` fires once its GPU work finishes); pass
+    /// `commit: false` to leave a shared buffer open for the caller to keep
+    /// encoding onto -- but then nothing commits it here, so `completion`
+    /// won't fire until whoever owns that buffer commits it themselves,
+    /// however that ends up happening.
     @discardableResult
-    public func submit(inputBuffer: MTLBuffer, commandBuffer: MTLCommandBuffer, completion: @escaping (Result<[[Float]], any Error>) -> Void) throws -> Bool
+    public func submit(inputBuffer: MTLBuffer, commandBuffer: MTLCommandBuffer, commit: Bool, completion: @escaping (Result<[[Float]], any Error>) -> Void) throws -> Bool
     {
         guard inputBuffer.length >= self.inputBufferLength else
         {
@@ -226,6 +238,10 @@ public final class MediaPipeMPSGraph
 
         let mpsCommandBuffer = MPSCommandBuffer(commandBuffer: commandBuffer)
         _ = self.executable.encode(to: mpsCommandBuffer, inputs: [inputData], results: nil, executionDescriptor: executionDescriptor)
+        if commit
+        {
+            mpsCommandBuffer.commit()
+        }
         return true
     }
 
@@ -234,15 +250,16 @@ public final class MediaPipeMPSGraph
     /// order as `outputTensors` -- see `outputBufferLengths`), no CPU
     /// float-array readback at all.
     ///
-    /// Never commits `commandBuffer` -- that decision belongs entirely to
-    /// whoever created the buffer, not to this method. `MPSGraphExecutable
-    /// .encode(to:)` doesn't commit anything on its own either, so the
-    /// buffer just holds this graph's encoded work, in order alongside
-    /// whatever else the caller encodes onto it, until its owner commits it
-    /// -- exactly like a plain render/compute pass. Pass a dedicated buffer
-    /// and commit it yourself immediately for ZipDepth-style same-frame,
-    /// no-wait consumption; pass Fabric's shared per-frame buffer and don't
-    /// commit it at all, letting its actual owner do that at the end of the
+    /// Commits `commandBuffer` internally when `commit` is true -- never do
+    /// this yourself by calling `.commit()` on the raw buffer you passed
+    /// in. See `submit(...)`'s doc comment for why: `MPSGraphExecutable
+    /// .encode(to:)` may commit the buffer on its own via an internal
+    /// `commitAndContinue`, and only the `MPSCommandBuffer` wrapper this
+    /// method builds internally can tell whether that already happened.
+    /// Pass a dedicated buffer and `commit: true` for ZipDepth-style
+    /// same-frame, no-wait consumption; pass Fabric's shared per-frame
+    /// buffer and `commit: false` and don't commit it at all, letting its
+    /// actual owner do that at the end of the
     /// frame.
     ///
     /// Drops the call (returns false) instead of blocking if all
@@ -251,7 +268,7 @@ public final class MediaPipeMPSGraph
     /// the future that turns out to be, so `maxFramesInFlight` effectively
     /// shrinks the more other same-buffer work delays that commit.
     @discardableResult
-    public func encode(inputBuffer: MTLBuffer, outputBuffers: [MTLBuffer], commandBuffer: MTLCommandBuffer) throws -> Bool
+    public func encode(inputBuffer: MTLBuffer, outputBuffers: [MTLBuffer], commandBuffer: MTLCommandBuffer, commit: Bool) throws -> Bool
     {
         guard outputBuffers.count == self.outputTensors.count else
         {
@@ -290,6 +307,10 @@ public final class MediaPipeMPSGraph
 
         let mpsCommandBuffer = MPSCommandBuffer(commandBuffer: commandBuffer)
         _ = self.executable.encode(to: mpsCommandBuffer, inputs: [inputData], results: outputData, executionDescriptor: executionDescriptor)
+        if commit
+        {
+            mpsCommandBuffer.commit()
+        }
         return true
     }
 
