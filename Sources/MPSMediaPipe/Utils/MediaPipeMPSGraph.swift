@@ -69,7 +69,7 @@ public final class MediaPipeMPSGraph
     /// format) and `<name>_ops.json` (the resolved op list). Up to
     /// `maxFramesInFlight` overlapping `run()`/`submit()` calls may be in
     /// flight on one instance at once.
-    public init(weightsBinaryURL: URL, weightsManifestURL: URL, opsJSONURL: URL, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue, maxFramesInFlight: Int = 3, precision: MediaPipePrecision = .float32) throws
+    public init(weightsBinaryURL: URL, weightsManifestURL: URL, opsJSONURL: URL, inputWidth: Int, inputHeight: Int, commandQueue: MTLCommandQueue, maxFramesInFlight: Int = 3, precision: MediaPipePrecision = .float32, computeUnits: MediaPipeComputeUnits = .gpuAndNeuralEngine) throws
     {
         let weights = try MediaPipeModelWeights(binaryURL: weightsBinaryURL, manifestURL: weightsManifestURL)
         self.device = MPSGraphDevice(mtlDevice: commandQueue.device)
@@ -149,7 +149,7 @@ public final class MediaPipeMPSGraph
         }
 
         let inputType = MPSGraphShapedType(shape: inputShape, dataType: .float32)
-        let compilationDescriptor = Self.performanceCompilationDescriptor()
+        let compilationDescriptor = Self.performanceCompilationDescriptor(computeUnits: computeUnits)
         self.executable = self.graph.compile(
             with: self.device,
             feeds: [inputPlaceholder: inputType],
@@ -160,10 +160,10 @@ public final class MediaPipeMPSGraph
         self.executable.specialize(with: self.device, inputTypes: [inputType], compilationDescriptor: compilationDescriptor)
     }
 
-    private static func performanceCompilationDescriptor() -> MPSGraphCompilationDescriptor
+    private static func performanceCompilationDescriptor(computeUnits: MediaPipeComputeUnits) -> MPSGraphCompilationDescriptor
     {
         let descriptor = MPSGraphCompilationDescriptor()
-        descriptor.optimizationLevel = .level1
+        descriptor.optimizationLevel = computeUnits.optimizationLevel
         descriptor.waitForCompilationCompletion = true
         if #available(macOS 26.0, iOS 26.0, tvOS 26.0, visionOS 26.0, *)
         {

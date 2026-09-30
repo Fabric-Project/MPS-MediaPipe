@@ -172,10 +172,14 @@ func mediaPipeModelMatchesReference(model: MediaPipeBundledModel) throws
         Double(duration.components.seconds) * 1_000 + Double(duration.components.attoseconds) / 1e15
     }
 
-    for model in MediaPipeBundledModel.all
+    // MEDIAPIPE_GPU_ONLY=1 compiles at .level0 (no ANE placement);
+    // MEDIAPIPE_BENCHMARK_MODEL limits the run to one model.
+    let computeUnits: MediaPipeComputeUnits = ProcessInfo.processInfo.environment["MEDIAPIPE_GPU_ONLY"] == "1" ? .gpuOnly : .gpuAndNeuralEngine
+    let modelFilter = ProcessInfo.processInfo.environment["MEDIAPIPE_BENCHMARK_MODEL"]
+    for model in MediaPipeBundledModel.all where modelFilter == nil || model.name == modelFilter
     {
         let constructionStart = clock.now
-        let graph = try MediaPipeMPSGraph.loadBundled(named: model.name, inputWidth: model.width, inputHeight: model.height, commandQueue: commandQueue, maxFramesInFlight: 16, precision: mediaPipeTestPrecision())
+        let graph = try MediaPipeMPSGraph.loadBundled(named: model.name, inputWidth: model.width, inputHeight: model.height, commandQueue: commandQueue, maxFramesInFlight: 16, precision: mediaPipeTestPrecision(), computeUnits: computeUnits)
         let construction = clock.now - constructionStart
 
         let inputBuffer = try #require(device.makeBuffer(length: graph.inputBufferLength, options: .storageModePrivate))
@@ -211,7 +215,7 @@ func mediaPipeModelMatchesReference(model: MediaPipeBundledModel) throws
     }
 }
 
-private func mediaPipeTestPrecision() -> MediaPipePrecision
+func mediaPipeTestPrecision() -> MediaPipePrecision
 {
     switch ProcessInfo.processInfo.environment["MEDIAPIPE_PRECISION"]
     {
