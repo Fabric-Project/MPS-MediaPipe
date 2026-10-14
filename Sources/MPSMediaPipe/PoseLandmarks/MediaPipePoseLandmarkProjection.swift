@@ -67,14 +67,24 @@ public enum MediaPipePoseLandmarkProjection
         public var landmarks: [simd_float3]
         /// The 2 dedicated ROI-derivation points (decoded indices 33-34).
         public var auxiliaryLandmarks: [simd_float3]
+        /// The 33 pose landmarks as a hip-centered, real-world-scale (meters)
+        /// shape; not projected through the crop rect (only derotated, since
+        /// already metric). Empty when the caller passed no world output.
+        public var worldLandmarks: [simd_float3]
+        /// Per pose landmark, the model's confidence (0...1) that the point
+        /// is both in the frame and not hidden: sigmoid(visibility) times
+        /// sigmoid(presence), index-aligned with `landmarks`.
+        public var landmarkConfidence: [Float]
     }
 
     /// `landmarksRaw` is the flat 195-float (39x5) output (x,y already
     /// heatmap-refined by the caller) -- shorter than that returns nil.
+    /// `worldLandmarksRaw` is the flat 117-float (39x3) world output; fewer
+    /// floats than the 33 pose landmarks need leaves `worldLandmarks` empty.
     /// `presenceRaw` is the raw (pre-sigmoid) pose-presence logit. Returns
     /// nil when presence is below threshold.
     public static func project(
-        landmarksRaw: [Float], presenceRaw: Float,
+        landmarksRaw: [Float], worldLandmarksRaw: [Float], presenceRaw: Float,
         rect: (cx: Float, cy: Float, width: Float, height: Float, rotation: Float)
     ) -> Pose?
     {
@@ -111,7 +121,25 @@ public enum MediaPipePoseLandmarkProjection
             auxiliaryLandmarks.append(projectPoint(index))
         }
 
-        return Pose(landmarks: landmarks, auxiliaryLandmarks: auxiliaryLandmarks)
+        var worldLandmarks: [simd_float3] = []
+        if worldLandmarksRaw.count >= poseLandmarkCount * 3
+        {
+            worldLandmarks.reserveCapacity(poseLandmarkCount)
+            for index in 0..<poseLandmarkCount
+            {
+                let x = worldLandmarksRaw[index * 3 + 0]
+                let y = worldLandmarksRaw[index * 3 + 1]
+                let z = worldLandmarksRaw[index * 3 + 2]
+                worldLandmarks.append(simd_float3(cosA * x - sinA * y, sinA * x + cosA * y, z))
+            }
+        }
+
+        func sigmoid(_ logit: Float) -> Float { 1 / (1 + exp(-logit)) }
+        let landmarkConfidence = (0..<poseLandmarkCount).map { index in
+            sigmoid(landmarksRaw[index * 5 + 3]) * sigmoid(landmarksRaw[index * 5 + 4])
+        }
+
+        return Pose(landmarks: landmarks, auxiliaryLandmarks: auxiliaryLandmarks, worldLandmarks: worldLandmarks, landmarkConfidence: landmarkConfidence)
     }
 
     /// Re-derives a tracking ROI from this frame's auxiliary landmarks. nil

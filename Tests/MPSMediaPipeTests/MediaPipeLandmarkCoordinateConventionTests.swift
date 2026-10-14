@@ -65,7 +65,7 @@ struct MediaPipeLandmarkCoordinateConventionTests
         raw[1] = MediaPipePoseLandmarkProjection.landmarkSize / 2
         raw[2] = 0
 
-        let pose = try #require(MediaPipePoseLandmarkProjection.project(landmarksRaw: raw, presenceRaw: 10, rect: Self.identityRect))
+        let pose = try #require(MediaPipePoseLandmarkProjection.project(landmarksRaw: raw, worldLandmarksRaw: [], presenceRaw: 10, rect: Self.identityRect))
         #expect(abs(pose.landmarks[0].x - 0.5) < 1e-5)
         #expect(abs(pose.landmarks[0].y - 0.5) < 1e-5)
         #expect(abs(pose.landmarks[0].z - 0) < 1e-5)
@@ -111,7 +111,7 @@ struct MediaPipeLandmarkCoordinateConventionTests
         var raw = [Float](repeating: 0, count: 39 * 5)
         raw[2] = Self.targetNormalizedZ * MediaPipePoseLandmarkProjection.landmarkSize
 
-        let pose = try #require(MediaPipePoseLandmarkProjection.project(landmarksRaw: raw, presenceRaw: 10, rect: Self.nonSquareRect))
+        let pose = try #require(MediaPipePoseLandmarkProjection.project(landmarksRaw: raw, worldLandmarksRaw: [], presenceRaw: 10, rect: Self.nonSquareRect))
         #expect(abs(pose.landmarks[0].z - Self.expectedProjectedZ) < 1e-4)
     }
 
